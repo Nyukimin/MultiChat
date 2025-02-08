@@ -1,0 +1,19 @@
+{
+  "users": [
+    {
+      "id": "alice",
+      "name": "Alice",
+      "active": true
+    },
+    {
+      "id": "bob", 
+      "name": "Bob",
+      "active": true
+    },
+    {
+      "id": "carol",
+      "name": "Carol", 
+      "active": true
+    }
+  ]
+}

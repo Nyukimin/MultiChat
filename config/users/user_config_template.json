@@ -1,0 +1,20 @@
+{
+  "id": "",
+  "name": "",
+  "llm": {
+    "type": "",
+    "model": ""
+  },
+  "characters": [
+    {
+      "id": 1,
+      "name": "",
+      "personality": "",
+      "tone": ""
+    }
+  ],
+  "preferences": {
+    "language": "ja",
+    "response_style": "detailed"
+  }
+}
