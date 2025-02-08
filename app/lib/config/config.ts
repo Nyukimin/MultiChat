@@ -1,66 +1,76 @@
 // 環境変数の型定義
 type Config = {
   api: {
-    anthropic: {
-      apiKey: string;
-      baseUrl: string;
-      defaultModel: string;
-      model: string;
-      maxTokens: number;
-      temperature: number;
-    };
     google: {
+      apiKey: string;
+    };
+    anthropic: {
       apiKey: string;
     };
     gemini: {
       apiKey: string;
     };
-    ollama: {
-      host: string;
-      model: string;
-    };
+  };
+  ollama: {
+    host: string;
+    model: string;
   };
   app: {
-    debug: boolean;
+    chatSpeed: number;
+    debugMode: boolean;
   };
 };
 
 // 設定オブジェクト
 const config: Config = {
   api: {
-    anthropic: {
-      apiKey: process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY || '',
-      baseUrl: "https://api.anthropic.com/v1/",
-      defaultModel: "claude-3-sonnet-20240229",
-      model: 'claude-3-sonnet-20240229',
-      maxTokens: 300,
-      temperature: 0.7,
-    },
     google: {
-      apiKey: process.env.NEXT_PUBLIC_GOOGLE_API_KEY || '',
+      apiKey: process.env.GOOGLE_API_KEY,
+    },
+    anthropic: {
+      apiKey: process.env.ANTHROPIC_API_KEY,
     },
     gemini: {
-      apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY || '',
-    },
-    ollama: {
-      host: process.env.OLLAMA_HOST || 'http://localhost:11434',
-      model: process.env.OLLAMA_MODEL || '',
+      apiKey: process.env.GEMINI_API_KEY,
     },
   },
+  ollama: {
+    host: process.env.NEXT_PUBLIC_OLLAMA_HOST,
+    model: process.env.NEXT_PUBLIC_OLLAMA_MODEL,
+  },
   app: {
-    debug: process.env.NODE_ENV === 'development',
+    chatSpeed: Number(process.env.NEXT_PUBLIC_CHAT_SPEED) || 5,
+    debugMode: process.env.NEXT_PUBLIC_DEBUG_MODE === 'true',
   },
 } as const;
 
-// 必須環境変数の検証
-const requiredEnvVars = [
-  'NEXT_PUBLIC_ANTHROPIC_API_KEY',
-] as const;
-
-for (const envVar of requiredEnvVars) {
-  if (!process.env[envVar]) {
-    throw new Error(`必要な環境変数 ${envVar} が設定されていません。`);
+// 設定値の存在チェック
+const validateConfig = () => {
+  // サーバーサイドでのみチェック
+  if (typeof window === 'undefined') {
+    if (!config.api.google.apiKey) {
+      console.warn('Warning: GOOGLE_API_KEY is not set');
+    }
+    if (!config.api.anthropic.apiKey) {
+      console.warn('Warning: ANTHROPIC_API_KEY is not set');
+    }
+    if (!config.api.gemini.apiKey) {
+      console.warn('Warning: GEMINI_API_KEY is not set');
+    }
   }
+
+  // クライアントサイドでも必要な設定のチェック
+  if (!config.ollama.host) {
+    throw new Error('NEXT_PUBLIC_OLLAMA_HOST is not set');
+  }
+  if (!config.ollama.model) {
+    throw new Error('NEXT_PUBLIC_OLLAMA_MODEL is not set');
+  }
+};
+
+// 開発環境でのみ設定値をチェック
+if (process.env.NODE_ENV === 'development') {
+  validateConfig();
 }
 
 export default config;

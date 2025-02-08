@@ -1,86 +1,68 @@
 import React, { createContext, useState, useCallback, ReactNode } from 'react';
 import config from '../config/config';
-import { fetchCharacterResponses } from '@/app/lib/api/characterApi';
+import { getCharacterResponse } from '@/app/lib/api/characterApi';
 
 // キャラクターの型定義
 export interface Character {
   id: string;
   name: string;
-  response?: string;
-  isLoading: boolean;
+  avatar: string;
+  description: string;
 }
 
-// コンテキストの型定義
+// チャットメッセージの型定義
+interface ChatMessage {
+  id: string;
+  characterId: string;
+  content: string;
+  timestamp: Date;
+}
+
+// チャットコンテキストの型定義
 interface ChatContextType {
-  characters: Character[];
+  messages: ChatMessage[];
   sendMessageToCharacters: (message: string) => Promise<void>;
-  clearResponses: () => void;
 }
 
+// チャットコンテキストの作成
 export const ChatContext = createContext<ChatContextType>({
-  characters: [],
+  messages: [],
   sendMessageToCharacters: async () => {},
-  clearResponses: () => {},
 });
 
-export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // デフォルトのキャラクターリスト
-  const [characters, setCharacters] = useState<Character[]>([
-    { id: 'alice', name: 'アリス', response: '', isLoading: false },
-    { id: 'bob', name: 'ボブ', response: '', isLoading: false },
-    { id: 'carol', name: 'キャロル', response: '', isLoading: false }
-  ]);
+// チャットプロバイダーの型定義
+interface ChatProviderProps {
+  children: ReactNode;
+}
 
-  // メッセージを全キャラクターに送信（非同期）
+// チャットプロバイダーコンポーネント
+export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+
+  // メッセージを全キャラクターに送信
   const sendMessageToCharacters = useCallback(async (message: string) => {
-    // 全キャラクターの状態を「読み込み中」に更新
-    setCharacters(prev => prev.map(char => ({ ...char, isLoading: true, response: '' })));
-
     try {
-      // 全キャラクターの応答を並列で非同期取得
-      const responsePromises = characters.map(async (character) => {
-        // 各キャラクターの応答を非同期で取得
-        const response = await fetchCharacterResponses(character.id, message);
-        
-        // 応答を取得したキャラクターの状態を更新
-        setCharacters(prev => prev.map(char => 
-          char.id === character.id 
-            ? { ...char, response, isLoading: false } 
-            : char
-        ));
-
-        return { ...character, response, isLoading: false };
-      });
-
-      // すべての応答を待機（ただし、上記のsetCharactersにより、リアルタイムで描画される）
-      await Promise.all(responsePromises);
-    } catch (error) {
-      console.error('キャラクターの応答取得中にエラーが発生しました:', error);
+      // 選択されたキャラクターそれぞれに対してレスポンスを生成
+      const characters: Character[] = []; // TODO: キャラクターリストを実装
       
-      // エラー時に全キャラクターの状態をリセット
-      setCharacters(prev => prev.map(char => ({ 
-        ...char, 
-        response: 'エラーが発生しました。', 
-        isLoading: false 
-      })));
+      for (const character of characters) {
+        const response = await getCharacterResponse(character, message);
+        
+        // 新しいメッセージを追加
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          characterId: character.id,
+          content: response,
+          timestamp: new Date()
+        }]);
+      }
+    } catch (error) {
+      console.error('メッセージ送信中にエラーが発生:', error);
     }
-  }, [characters]);
-
-  // 応答をクリア
-  const clearResponses = useCallback(() => {
-    setCharacters(prev => prev.map(char => ({ 
-      ...char, 
-      response: '', 
-      isLoading: false 
-    })));
   }, []);
 
   return (
-    <ChatContext.Provider value={{ 
-      characters, 
-      sendMessageToCharacters, 
-      clearResponses 
-    }}>
+    <ChatContext.Provider value={{ messages, sendMessageToCharacters }}>
       {children}
     </ChatContext.Provider>
   );
