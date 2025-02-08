@@ -11,7 +11,7 @@ export default function Home() {
       <div className="max-w-6xl mx-auto bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8">
         <div className="flex gap-8">
           {/* 左側エリア */}
-          <div className="w-1/3 flex flex-col gap-6">
+          <div className="w-1/4 flex flex-col gap-6">
             {/* オーナー入力エリア */}
             <div>
               <textarea
@@ -43,7 +43,7 @@ export default function Home() {
           </div>
 
           {/* 右側エリア */}
-          <div className="w-2/3 flex flex-col gap-6">
+          <div className="w-3/4 flex flex-col gap-6">
             {/* 質問エリア */}
             <div>
               <textarea
