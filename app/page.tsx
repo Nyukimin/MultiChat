@@ -2,13 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { ChatProvider } from '@/app/lib/context/ChatContext';
-import { ChatInput } from '@/components/ChatInput';
-import { CharacterResponses } from '@/components/CharacterResponses';
 
 export default function Home() {
-  const [selectedCharacters, setSelectedCharacters] = useState<number[]>([])
+  const [selectedCharacters, setSelectedCharacters] = useState<string[]>([])
   const [question, setQuestion] = useState('')
   const [serverConfig, setServerConfig] = useState<any>(null);
+  const [ownerInput, setOwnerInput] = useState('');
 
   // キャラクターリストの定義
   const characters = [
@@ -40,6 +39,33 @@ export default function Home() {
       .catch(err => console.error('設定の取得に失敗:', err));
   }, []);
 
+  const handleSendInstruction = async () => {
+    if (!ownerInput.trim()) return;
+
+    try {
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          instruction: ownerInput,
+          characters: selectedCharacters
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('指示の送信に失敗しました');
+      }
+
+      // 送信後にテキストボックスをクリア
+      setOwnerInput('');
+    } catch (error) {
+      console.error('エラー:', error);
+      // TODO: エラーハンドリングの改善
+    }
+  };
+
   return (
     <ChatProvider>
       <main className="min-h-screen p-8 bg-gradient-to-br from-pink-100 to-blue-100">
@@ -51,11 +77,23 @@ export default function Home() {
             {/* 左側エリア */}
             <div className="w-1/4 flex flex-col gap-6">
               {/* オーナー入力エリア */}
-              <div>
+              <div className="flex flex-col gap-2">
                 <textarea
+                  value={ownerInput}
+                  onChange={(e) => setOwnerInput(e.target.value)}
                   className="w-full h-48 p-4 rounded-lg border border-pink-200 bg-pink-50 focus:ring-2 focus:ring-pink-300 focus:border-transparent resize-none"
                   placeholder="オーナー入力"
                 />
+                <button 
+                  onClick={handleSendInstruction}
+                  disabled={!ownerInput.trim() || selectedCharacters.length === 0}
+                  className="w-full py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-300 ease-in-out flex items-center justify-center space-x-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clipRule="evenodd" />
+                  </svg>
+                  <span>指定キャラクターに送信</span>
+                </button>
               </div>
 
               {/* キャラクター選択 */}
@@ -110,36 +148,21 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-              <ChatInput />
-              <CharacterResponses />
             </div>
           </div>
         </div>
         <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm">
-          <h1 className="text-2xl font-bold mb-4">環境変数設定確認</h1>
+          <h1 className="text-2xl font-bold mb-4">LLMのログ</h1>
           
-          <div className="bg-gray-100 p-4 rounded-lg mb-4">
-            <h2 className="text-xl font-semibold mb-2">サーバーサイドの設定</h2>
-            <pre className="whitespace-pre-wrap">
-              {JSON.stringify(serverConfig, null, 2)}
-            </pre>
-          </div>
-
-          <div className="bg-gray-100 p-4 rounded-lg">
-            <h2 className="text-xl font-semibold mb-2">クライアントサイドの設定</h2>
-            <pre className="whitespace-pre-wrap">
-              {JSON.stringify({
-                ollama: {
-                  host: process.env.NEXT_PUBLIC_OLLAMA_HOST,
-                  model: process.env.NEXT_PUBLIC_OLLAMA_MODEL,
-                },
-                app: {
-                  chatSpeed: process.env.NEXT_PUBLIC_CHAT_SPEED,
-                  debugMode: process.env.NEXT_PUBLIC_DEBUG_MODE,
-                }
-              }, null, 2)}
-            </pre>
-          </div>
+          {characters.map((character) => (
+            <div key={character.id} className="bg-gray-100 p-4 rounded-lg mb-4">
+              <h2 className="text-xl font-semibold mb-2">{character.name}のログ</h2>
+              <pre className="whitespace-pre-wrap bg-white p-2 rounded">
+                {/* ここにLLMの会話ログや状態を表示 */}
+                現在、{character.name}には特別なログはありません。
+              </pre>
+            </div>
+          ))}
         </div>
       </main>
     </ChatProvider>
