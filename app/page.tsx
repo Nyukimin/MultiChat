@@ -3,42 +3,39 @@
 import React, { useState, useEffect } from 'react';
 import { ChatProvider } from '@/app/lib/context/ChatContext';
 
-interface LLMLog {
-  timestamp: Date;
-  characterId: string;
-  instruction: string;
-  response: string;
-}
-
 interface CharacterResponse {
   characterId: string;
   message: string;
+  llmName?: string;
+  responseTime?: number;
+  tokensPerSecond?: number;
+  questionTimestamp?: Date;
+  responseTimestamp?: Date;
 }
 
 export default function Home() {
-  const [selectedCharacters, setSelectedCharacters] = useState<string[]>([])
+  const [selectedCharacters, setSelectedCharacters] = useState<string[]>(['character1', 'character2', 'character3'])
   const [ownerInput, setOwnerInput] = useState('');
   const [characterResponses, setCharacterResponses] = useState<CharacterResponse[]>([]);
-  const [llmLogs, setLlmLogs] = useState<LLMLog[]>([]);
   const [serverConfig, setServerConfig] = useState<any>(null);
   const [question, setQuestion] = useState('');
 
   // キャラクターリストの定義
   const characters = [
     {
-      id: 'alice',
+      id: 'character1',
       name: 'アリス',
       avatar: '/avatars/alice.png',
       description: '明るく活発な少女'
     },
     {
-      id: 'bob',
+      id: 'character2',
       name: 'ボブ',
       avatar: '/avatars/bob.png',
       description: '冷静で論理的な青年'
     },
     {
-      id: 'carol',
+      id: 'character3',
       name: 'キャロル',
       avatar: '/avatars/carol.png',
       description: '優しく思いやりのある女性'
@@ -47,6 +44,8 @@ export default function Home() {
 
   const handleSendInstruction = async () => {
     if (!ownerInput.trim()) return;
+
+    const questionTimestamp = new Date();
 
     try {
       const response = await fetch('/api/generate', {
@@ -65,27 +64,21 @@ export default function Home() {
       }
 
       const data = await response.json();
-      
-      // 各キャラクターの応答をログに追加
-      const newLogs = data.responses.map((resp: { characterId: string; message: string }) => ({
-        timestamp: new Date(),
-        characterId: resp.characterId,
-        instruction: ownerInput,
-        response: resp.message
+      const responseTimestamp = new Date();
+
+      const enrichedResponses = data.responses.map((resp: any) => ({
+        ...resp,
+        llmName: 'Claude-3-Opus',
+        questionTimestamp,
+        responseTimestamp,
+        responseTime: (responseTimestamp.getTime() - questionTimestamp.getTime()) / 1000,
+        tokensPerSecond: resp.tokenCount ? resp.tokenCount / ((responseTimestamp.getTime() - questionTimestamp.getTime()) / 1000) : 0
       }));
 
-      setLlmLogs(prevLogs => [...newLogs, ...prevLogs]); // 新しいログを先頭に追加
-      setCharacterResponses(data.responses); // キャラクターの回答を更新
+      setCharacterResponses(enrichedResponses);
       setOwnerInput('');
     } catch (error) {
       console.error('エラー:', error);
-      // エラーをログに追加
-      setLlmLogs(prevLogs => [{
-        timestamp: new Date(),
-        characterId: 'system',
-        instruction: ownerInput,
-        response: `エラーが発生しました: ${error instanceof Error ? error.message : '不明なエラー'}`
-      }, ...prevLogs]);
     }
   };
 
@@ -93,6 +86,12 @@ export default function Home() {
   const getCharacterName = (id: string) => {
     const character = characters.find(c => c.id === id);
     return character ? character.name : id;
+  };
+
+  // 時刻をHH:MM:SS形式でフォーマット
+  const formatTime = (date?: Date) => {
+    if (!date) return '';
+    return date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   };
 
   return (
@@ -115,21 +114,24 @@ export default function Home() {
               {/* キャラクター選択エリア */}
               <div>
                 {characters.map((character) => (
-                  <div key={character.id} className="flex items-center space-x-2 mb-2">
-                    <input
-                      type="checkbox"
-                      id={character.id}
-                      checked={selectedCharacters.includes(character.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedCharacters([...selectedCharacters, character.id]);
-                        } else {
-                          setSelectedCharacters(selectedCharacters.filter(id => id !== character.id));
-                        }
-                      }}
-                      className="w-4 h-4"
-                    />
-                    <label htmlFor={character.id}>{character.name}</label>
+                  <div key={character.id} className="mb-4">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <input
+                        type="checkbox"
+                        id={character.id}
+                        checked={selectedCharacters.includes(character.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedCharacters([...selectedCharacters, character.id]);
+                          } else {
+                            setSelectedCharacters(selectedCharacters.filter(id => id !== character.id));
+                          }
+                        }}
+                        className="w-4 h-4"
+                      />
+                      <label htmlFor={character.id}>{character.name}</label>
+                    </div>
+                    <div className="text-sm text-gray-600 ml-6">Claude-3</div>
                   </div>
                 ))}
               </div>
@@ -155,43 +157,29 @@ export default function Home() {
 
               {/* キャラクター回答エリア */}
               <div className="grid grid-cols-3 gap-4">
-                {characters.map((character) => (
-                  <div key={character.id} className="border rounded-lg p-4">
-                    <h2 className="font-bold mb-2">{character.name}回答</h2>
-                    <div className="min-h-[200px]">
-                      {characterResponses.find(resp => resp.characterId === character.id)?.message || 
-                       `${character.name}からの回答はまだありません`}
+                {characters.map((character) => {
+                  const characterResponse = characterResponses.find(resp => resp.characterId === character.id);
+                  return (
+                    <div key={character.id} className="border rounded-lg p-4">
+                      <div className="mb-4">
+                        <h2 className="font-bold text-lg mb-2">{character.name}</h2>
+                        <div className="text-gray-600 space-y-1">
+                          <div>Time: {formatTime(characterResponse?.responseTimestamp)}</div>
+                          {characterResponse?.responseTime && (
+                            <div>Diff: {characterResponse.responseTime.toFixed(2)}秒</div>
+                          )}
+                          {characterResponse?.tokensPerSecond && (
+                            <div>{characterResponse.tokensPerSecond.toFixed(1)}token/sec</div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="min-h-[200px]">
+                        {characterResponse?.message || `${character.name}からの回答はまだありません`}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
-            </div>
-          </div>
-
-          {/* LLMログセクション */}
-          <div className="max-w-5xl mx-auto mt-8">
-            <h2 className="text-2xl font-bold mb-4">LLMのログ</h2>
-            <div className="space-y-4">
-              {llmLogs.map((log, index) => (
-                <div key={index} className="bg-white/90 p-4 rounded-lg shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-semibold text-purple-600">
-                      {getCharacterName(log.characterId)}
-                    </span>
-                    <span className="text-gray-500 text-sm">
-                      {log.timestamp.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="mb-2">
-                    <span className="text-gray-600 font-medium">指示:</span>
-                    <p className="text-gray-800 ml-2">{log.instruction}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-600 font-medium">応答:</span>
-                    <p className="text-gray-800 ml-2 whitespace-pre-wrap">{log.response}</p>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         </div>
