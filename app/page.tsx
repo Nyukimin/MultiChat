@@ -3,11 +3,25 @@
 import React, { useState, useEffect } from 'react';
 import { ChatProvider } from '@/app/lib/context/ChatContext';
 
+interface LLMLog {
+  timestamp: Date;
+  characterId: string;
+  instruction: string;
+  response: string;
+}
+
+interface CharacterResponse {
+  characterId: string;
+  message: string;
+}
+
 export default function Home() {
   const [selectedCharacters, setSelectedCharacters] = useState<string[]>([])
-  const [question, setQuestion] = useState('')
-  const [serverConfig, setServerConfig] = useState<any>(null);
   const [ownerInput, setOwnerInput] = useState('');
+  const [characterResponses, setCharacterResponses] = useState<CharacterResponse[]>([]);
+  const [llmLogs, setLlmLogs] = useState<LLMLog[]>([]);
+  const [serverConfig, setServerConfig] = useState<any>(null);
+  const [question, setQuestion] = useState('');
 
   // キャラクターリストの定義
   const characters = [
@@ -31,14 +45,6 @@ export default function Home() {
     }
   ];
 
-  useEffect(() => {
-    // サーバーサイドの設定を取得
-    fetch('/api/debug')
-      .then(res => res.json())
-      .then(data => setServerConfig(data))
-      .catch(err => console.error('設定の取得に失敗:', err));
-  }, []);
-
   const handleSendInstruction = async () => {
     if (!ownerInput.trim()) return;
 
@@ -58,113 +64,138 @@ export default function Home() {
         throw new Error('指示の送信に失敗しました');
       }
 
-      // 送信後にテキストボックスをクリア
+      const data = await response.json();
+      
+      // 各キャラクターの応答をログに追加
+      const newLogs = data.responses.map((resp: { characterId: string; message: string }) => ({
+        timestamp: new Date(),
+        characterId: resp.characterId,
+        instruction: ownerInput,
+        response: resp.message
+      }));
+
+      setLlmLogs(prevLogs => [...newLogs, ...prevLogs]); // 新しいログを先頭に追加
+      setCharacterResponses(data.responses); // キャラクターの回答を更新
       setOwnerInput('');
     } catch (error) {
       console.error('エラー:', error);
-      // TODO: エラーハンドリングの改善
+      // エラーをログに追加
+      setLlmLogs(prevLogs => [{
+        timestamp: new Date(),
+        characterId: 'system',
+        instruction: ownerInput,
+        response: `エラーが発生しました: ${error instanceof Error ? error.message : '不明なエラー'}`
+      }, ...prevLogs]);
     }
+  };
+
+  // キャラクター名を取得するヘルパー関数
+  const getCharacterName = (id: string) => {
+    const character = characters.find(c => c.id === id);
+    return character ? character.name : id;
   };
 
   return (
     <ChatProvider>
       <main className="min-h-screen p-8 bg-gradient-to-br from-pink-100 to-blue-100">
         <div className="max-w-6xl mx-auto bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8">
-          <h1 className="text-3xl font-bold mb-6 text-center">
-            マルチキャラクターチャットボット
-          </h1>
           <div className="flex gap-8">
             {/* 左側エリア */}
-            <div className="w-1/4 flex flex-col gap-6">
+            <div className="w-1/4">
               {/* オーナー入力エリア */}
-              <div className="flex flex-col gap-2">
+              <div className="mb-6">
                 <textarea
                   value={ownerInput}
                   onChange={(e) => setOwnerInput(e.target.value)}
-                  className="w-full h-48 p-4 rounded-lg border border-pink-200 bg-pink-50 focus:ring-2 focus:ring-pink-300 focus:border-transparent resize-none"
+                  className="w-full h-48 p-4 border rounded-lg resize-none"
                   placeholder="オーナー入力"
                 />
-                <button 
-                  onClick={handleSendInstruction}
-                  disabled={!ownerInput.trim() || selectedCharacters.length === 0}
-                  className="w-full py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-300 ease-in-out flex items-center justify-center space-x-2"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clipRule="evenodd" />
-                  </svg>
-                  <span>指定キャラクターに送信</span>
-                </button>
               </div>
 
-              {/* キャラクター選択 */}
-              <div className="flex flex-col gap-3">
+              {/* キャラクター選択エリア */}
+              <div>
                 {characters.map((character) => (
-                  <label key={character.id} className="flex items-center space-x-2 cursor-pointer">
+                  <div key={character.id} className="flex items-center space-x-2 mb-2">
                     <input
                       type="checkbox"
+                      id={character.id}
                       checked={selectedCharacters.includes(character.id)}
-                      onChange={() => {
-                        setSelectedCharacters(prev =>
-                          prev.includes(character.id)
-                            ? prev.filter(id => id !== character.id)
-                            : [...prev, character.id]
-                        )
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedCharacters([...selectedCharacters, character.id]);
+                        } else {
+                          setSelectedCharacters(selectedCharacters.filter(id => id !== character.id));
+                        }
                       }}
-                      className="w-5 h-5 rounded border-purple-300 text-purple-500 focus:ring-purple-200"
+                      className="w-4 h-4"
                     />
-                    <span className="text-gray-700">{character.name}</span>
-                  </label>
+                    <label htmlFor={character.id}>{character.name}</label>
+                  </div>
                 ))}
               </div>
+
+              <button 
+                onClick={handleSendInstruction}
+                disabled={!ownerInput.trim() || selectedCharacters.length === 0}
+                className="w-full mt-4 py-2 px-4 bg-blue-500 text-white rounded-lg disabled:bg-gray-300"
+              >
+                送信
+              </button>
             </div>
 
-            {/* 右側エリア */}
-            <div className="w-3/4 flex flex-col gap-6">
-              {/* 質問エリア */}
-              <div>
-                <textarea
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                  className="w-full h-32 p-4 rounded-lg border border-blue-200 bg-blue-50 focus:ring-2 focus:ring-blue-300 focus:border-transparent resize-none"
-                  placeholder="質問を入力してください"
-                />
+            {/* 右側エリア - 質問と回答表示 */}
+            <div className="w-3/4">
+              {/* 質問表示エリア */}
+              <div className="mb-6 p-4 border rounded-lg">
+                <h2 className="font-bold mb-2">質問</h2>
+                <div className="min-h-[50px]">
+                  {ownerInput || '質問はまだありません'}
+                </div>
               </div>
 
-              {/* 回答エリア */}
+              {/* キャラクター回答エリア */}
               <div className="grid grid-cols-3 gap-4">
                 {characters.map((character) => (
-                  <div
-                    key={character.id}
-                    className="p-4 rounded-lg bg-gradient-to-b from-purple-50 to-pink-50 border border-purple-100 shadow-sm"
-                  >
-                    <h3 className="text-lg font-medium mb-2 text-purple-700">
-                      {character.name}の回答
-                    </h3>
-                    <textarea
-                      className="w-full h-48 p-4 rounded-lg border border-purple-200 bg-white/70 focus:ring-2 focus:ring-purple-300 focus:border-transparent resize-none"
-                      placeholder={`${character.name}の回答`}
-                      readOnly
-                    />
+                  <div key={character.id} className="border rounded-lg p-4">
+                    <h2 className="font-bold mb-2">{character.name}回答</h2>
+                    <div className="min-h-[200px]">
+                      {characterResponses.find(resp => resp.characterId === character.id)?.message || 
+                       `${character.name}からの回答はまだありません`}
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
           </div>
-        </div>
-        <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm">
-          <h1 className="text-2xl font-bold mb-4">LLMのログ</h1>
-          
-          {characters.map((character) => (
-            <div key={character.id} className="bg-gray-100 p-4 rounded-lg mb-4">
-              <h2 className="text-xl font-semibold mb-2">{character.name}のログ</h2>
-              <pre className="whitespace-pre-wrap bg-white p-2 rounded">
-                {/* ここにLLMの会話ログや状態を表示 */}
-                現在、{character.name}には特別なログはありません。
-              </pre>
+
+          {/* LLMログセクション */}
+          <div className="max-w-5xl mx-auto mt-8">
+            <h2 className="text-2xl font-bold mb-4">LLMのログ</h2>
+            <div className="space-y-4">
+              {llmLogs.map((log, index) => (
+                <div key={index} className="bg-white/90 p-4 rounded-lg shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-semibold text-purple-600">
+                      {getCharacterName(log.characterId)}
+                    </span>
+                    <span className="text-gray-500 text-sm">
+                      {log.timestamp.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="mb-2">
+                    <span className="text-gray-600 font-medium">指示:</span>
+                    <p className="text-gray-800 ml-2">{log.instruction}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 font-medium">応答:</span>
+                    <p className="text-gray-800 ml-2 whitespace-pre-wrap">{log.response}</p>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       </main>
     </ChatProvider>
-  )
+  );
 }
