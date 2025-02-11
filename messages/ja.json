@@ -1,0 +1,22 @@
+{
+  "validation": {
+    "required": "{field}は必須です",
+    "minLength": "{field}は{min}文字以上である必要があります",
+    "invalidFormat": "{field}の形式が不正です",
+    "arrayMin": "{field}は少なくとも{min}個の要素が必要です"
+  },
+  "error": {
+    "loadCharacter": "キャラクター設定の読み込みに失敗しました",
+    "characterNotFound": "キャラクター設定が見つかりませんでした",
+    "invalidCharacter": "キャラクター設定が不正です",
+    "networkError": "ネットワークエラーが発生しました"
+  },
+  "field": {
+    "id": "ID",
+    "name": "名前",
+    "personality": "性格設定",
+    "tone": "話し方",
+    "model": "モデル",
+    "responseStyle": "レスポンススタイル"
+  }
+}

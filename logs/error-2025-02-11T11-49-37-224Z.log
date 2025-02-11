@@ -1,0 +1,23 @@
+エラー発生ファイル：E:\GenerativeAI\LLM\AIChat\ai-multi-chat\app_03\MultiChat\app\lib\utils\errorLogger.ts
+エラーメッセージ：テストエラー
+関連ファイル：
+  - E:\GenerativeAI\LLM\AIChat\ai-multi-chat\app_03\MultiChat\app\lib\ai_clients\factory.ts
+  - E:\GenerativeAI\LLM\AIChat\ai-multi-chat\app_03\MultiChat\app\lib\types\ai.ts
+発生時刻：2025-02-11T11:49:37.224Z
+
+スタックトレース：
+Error: テストエラー
+    at Object.<anonymous> (E:\GenerativeAI\LLM\AIChat\ai-multi-chat\app_03\MultiChat\__tests__\utils\errorLogger.test.ts:16:23)
+    at Promise.then.completed (E:\GenerativeAI\LLM\AIChat\ai-multi-chat\app_03\MultiChat\node_modules\jest-circus\build\utils.js:298:28)
+    at new Promise (<anonymous>)
+    at callAsyncCircusFn (E:\GenerativeAI\LLM\AIChat\ai-multi-chat\app_03\MultiChat\node_modules\jest-circus\build\utils.js:231:10)
+    at _callCircusTest (E:\GenerativeAI\LLM\AIChat\ai-multi-chat\app_03\MultiChat\node_modules\jest-circus\build\run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at _runTest (E:\GenerativeAI\LLM\AIChat\ai-multi-chat\app_03\MultiChat\node_modules\jest-circus\build\run.js:252:3)
+    at _runTestsForDescribeBlock (E:\GenerativeAI\LLM\AIChat\ai-multi-chat\app_03\MultiChat\node_modules\jest-circus\build\run.js:126:9)
+    at _runTestsForDescribeBlock (E:\GenerativeAI\LLM\AIChat\ai-multi-chat\app_03\MultiChat\node_modules\jest-circus\build\run.js:121:9)
+    at run (E:\GenerativeAI\LLM\AIChat\ai-multi-chat\app_03\MultiChat\node_modules\jest-circus\build\run.js:71:3)
+    at runAndTransformResultsToJestFormat (E:\GenerativeAI\LLM\AIChat\ai-multi-chat\app_03\MultiChat\node_modules\jest-circus\build\legacy-code-todo-rewrite\jestAdapterInit.js:122:21)
+    at jestAdapter (E:\GenerativeAI\LLM\AIChat\ai-multi-chat\app_03\MultiChat\node_modules\jest-circus\build\legacy-code-todo-rewrite\jestAdapter.js:79:19)
+    at runTestInternal (E:\GenerativeAI\LLM\AIChat\ai-multi-chat\app_03\MultiChat\node_modules\jest-runner\build\runTest.js:367:16)
+    at runTest (E:\GenerativeAI\LLM\AIChat\ai-multi-chat\app_03\MultiChat\node_modules\jest-runner\build\runTest.js:444:34)

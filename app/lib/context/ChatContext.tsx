@@ -1,6 +1,8 @@
+'use client';
+
 import React, { createContext, useState, useCallback, ReactNode } from 'react';
-import config from '../config/config';
 import { fetchCharacterResponses } from '@/app/lib/api/characterApi';
+import { loadCharacters as loadCharacterConfig } from '@/app/lib/utils/characterLoader';
 
 // キャラクターの型定義
 export interface Character {
@@ -8,6 +10,8 @@ export interface Character {
   name: string;
   response?: string;
   isLoading: boolean;
+  personality?: string;
+  tone?: string;
 }
 
 // コンテキストの型定義
@@ -15,73 +19,88 @@ interface ChatContextType {
   characters: Character[];
   sendMessageToCharacters: (message: string) => Promise<void>;
   clearResponses: () => void;
+  ownerInput: string;
+  setOwnerInput: (input: string) => void;
 }
 
 export const ChatContext = createContext<ChatContextType>({
   characters: [],
   sendMessageToCharacters: async () => {},
   clearResponses: () => {},
+  ownerInput: '',
+  setOwnerInput: () => {},
 });
 
-export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // デフォルトのキャラクターリスト
-  const [characters, setCharacters] = useState<Character[]>([
-    { id: 'alice', name: 'アリス', response: '', isLoading: false },
-    { id: 'bob', name: 'ボブ', response: '', isLoading: false },
-    { id: 'carol', name: 'キャロル', response: '', isLoading: false }
-  ]);
+export function ChatProvider({ children }: { children: ReactNode }) {
+  const [characters, setCharacters] = useState<Character[]>([]);
+  const [ownerInput, setOwnerInput] = useState('');
+
+  // 初期化
+  React.useEffect(() => {
+    const initializeCharacters = async () => {
+      try {
+        const loadedCharacters = await loadCharacterConfig();
+        setCharacters(loadedCharacters.map(char => ({
+          ...char,
+          isLoading: false,
+        })));
+      } catch (error) {
+        console.error('キャラクターの初期化に失敗しました:', error);
+      }
+    };
+
+    initializeCharacters();
+  }, []);
 
   // メッセージを全キャラクターに送信（非同期）
   const sendMessageToCharacters = useCallback(async (message: string) => {
     // 全キャラクターの状態を「読み込み中」に更新
-    setCharacters(prev => prev.map(char => ({ ...char, isLoading: true, response: '' })));
+    setCharacters(prev => prev.map(char => ({
+      ...char,
+      isLoading: true,
+    })));
 
     try {
-      // 全キャラクターの応答を並列で非同期取得
-      const responsePromises = characters.map(async (character) => {
-        // 各キャラクターの応答を非同期で取得
-        const response = await fetchCharacterResponses(character.id, message);
-        
-        // 応答を取得したキャラクターの状態を更新
-        setCharacters(prev => prev.map(char => 
-          char.id === character.id 
-            ? { ...char, response, isLoading: false } 
-            : char
-        ));
-
-        return { ...character, response, isLoading: false };
-      });
-
-      // すべての応答を待機（ただし、上記のsetCharactersにより、リアルタイムで描画される）
-      await Promise.all(responsePromises);
-    } catch (error) {
-      console.error('キャラクターの応答取得中にエラーが発生しました:', error);
+      const responses = await fetchCharacterResponses(message, characters);
       
-      // エラー時に全キャラクターの状態をリセット
-      setCharacters(prev => prev.map(char => ({ 
-        ...char, 
-        response: 'エラーが発生しました。', 
-        isLoading: false 
+      // レスポンスを反映
+      setCharacters(prev => prev.map(char => {
+        const response = responses.find(r => r.id === char.id);
+        return {
+          ...char,
+          response: response?.response,
+          isLoading: false,
+        };
+      }));
+    } catch (error) {
+      console.error('メッセージの送信に失敗しました:', error);
+      // エラー時は全キャラクターの読み込み状態をリセット
+      setCharacters(prev => prev.map(char => ({
+        ...char,
+        isLoading: false,
       })));
     }
   }, [characters]);
 
-  // 応答をクリア
+  // レスポンスをクリア
   const clearResponses = useCallback(() => {
-    setCharacters(prev => prev.map(char => ({ 
-      ...char, 
-      response: '', 
-      isLoading: false 
+    setCharacters(prev => prev.map(char => ({
+      ...char,
+      response: undefined,
     })));
   }, []);
 
   return (
-    <ChatContext.Provider value={{ 
-      characters, 
-      sendMessageToCharacters, 
-      clearResponses 
-    }}>
+    <ChatContext.Provider
+      value={{
+        characters,
+        sendMessageToCharacters,
+        clearResponses,
+        ownerInput,
+        setOwnerInput,
+      }}
+    >
       {children}
     </ChatContext.Provider>
   );
-};
+}

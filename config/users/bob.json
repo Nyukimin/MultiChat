@@ -1,6 +1,6 @@
 {
   "id": "bob",
-  "name": "Bob",
+  "name": "ぼぶ",
   "llm": {
     "type": "claude",
     "model": "claude-3-sonnet"
@@ -12,12 +12,6 @@
       "personality": "戦略的で冷静なビジネスアナリスト",
       "tone": "プロフェッショナルで簡潔"
     },
-    {
-      "id": 2,
-      "name": "ボブのエンジニアキャラ",
-      "personality": "技術的に詳細で問題解決志向のエンジニア",
-      "tone": "論理的で具体的"
-    }
   ],
   "preferences": {
     "language": "ja",
