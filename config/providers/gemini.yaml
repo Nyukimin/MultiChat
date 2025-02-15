@@ -1,0 +1,12 @@
+name: "gemini"
+type: "cloud"
+baseUrl: "https://generativelanguage.googleapis.com/v1"
+authType: "api_key"
+parameters:
+  apiKeyEnv: "NEXT_PUBLIC_GEMINI_API_KEY"
+  model: "gemini-1.5-pro-latest"
+  temperature: 0.7
+  maxTokens: 2048
+rateLimit:
+  requestsPerMinute: 60
+  maxConcurrent: 5

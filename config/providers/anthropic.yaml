@@ -1,0 +1,12 @@
+name: "anthropic"
+type: "cloud"
+baseUrl: "https://api.anthropic.com/v1"
+authType: "api_key"
+parameters:
+  apiKeyEnv: "NEXT_PUBLIC_ANTHROPIC_API_KEY"
+  model: "claude-3-opus-20240229"
+  temperature: 0.7
+  maxTokens: 4096
+rateLimit:
+  requestsPerMinute: 15
+  maxConcurrent: 3

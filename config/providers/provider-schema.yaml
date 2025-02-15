@@ -1,0 +1,49 @@
+type: object
+required:
+  - name
+  - type
+  - baseUrl
+  - authType
+  - parameters
+  - rateLimit
+properties:
+  name:
+    type: string
+    description: プロバイダの一意な識別子
+  type:
+    type: string
+    enum: [cloud, local]
+    description: プロバイダのタイプ
+  baseUrl:
+    type: string
+    format: uri
+    description: APIエンドポイントのベースURL
+  authType:
+    type: string
+    enum: [api_key, oauth2]
+    description: 認証方式
+  parameters:
+    type: object
+    properties:
+      model:
+        type: string
+      temperature:
+        type: number
+        minimum: 0
+        maximum: 1
+      maxTokens:
+        type: integer
+        minimum: 1
+    additionalProperties: true
+  rateLimit:
+    type: object
+    required:
+      - requestsPerMinute
+      - maxConcurrent
+    properties:
+      requestsPerMinute:
+        type: integer
+        minimum: 1
+      maxConcurrent:
+        type: integer
+        minimum: 1
