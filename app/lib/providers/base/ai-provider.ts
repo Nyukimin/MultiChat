@@ -5,24 +5,30 @@ export interface ProviderHealth {
   responseTime?: number;
 }
 
-export interface ProviderConfig {
-  apiKey?: string;
+export interface BaseProviderParameters {
+  model?: string;
+  maxTokens?: number;
   baseUrl?: string;
-  parameters: {
-    model?: string;
-    maxTokens?: number;
-    temperature?: number;
-    [key: string]: any;
-  };
+  [key: string]: any;
 }
 
-export abstract class AIProvider {
+export interface ProviderConfig<T extends BaseProviderParameters = BaseProviderParameters> {
+  name: string;
+  apiKey?: string;
+  parameters: T;
+}
+
+export abstract class AIProvider<T extends BaseProviderParameters = BaseProviderParameters> {
   protected health: ProviderHealth = {
     isHealthy: true,
-    lastCheckTime: new Date()
+    lastCheckTime: new Date(),
   };
 
-  constructor(protected config: ProviderConfig) {}
+  protected readonly config: ProviderConfig<T>;
+
+  constructor(config: ProviderConfig<T>) {
+    this.config = config;
+  }
 
   abstract streamChat(prompt: string): Promise<ReadableStream>;
   

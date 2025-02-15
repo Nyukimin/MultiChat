@@ -86,61 +86,65 @@ export default function Home() {
 
       // SSEイベントハンドラーの設定
       const setupEventSource = (prompt: string, llm: string) => {
-        console.log('[Client] Initializing SSE connection:', {
-          promptPreview: prompt.slice(0, 50),
-          llm,
-          timestamp: new Date().toISOString()
-        });
-
         const params = new URLSearchParams({ prompt, llm });
-        console.log('[Client] Request URL:', `/api/chat?${params.toString()}`);
-
         const eventSource = new EventSource(`/api/chat?${params.toString()}`);
         let retryCount = 0;
         const maxRetries = 3;
+        let reconnectTimeout: NodeJS.Timeout;
 
         eventSource.onopen = () => {
-          console.log('[SSE] Connection opened:', {
-            readyState: eventSource.readyState,
-            url: eventSource.url,
-            timestamp: new Date().toISOString()
-          });
           retryCount = 0; // 接続成功時にリトライカウントをリセット
+          if (reconnectTimeout) {
+            clearTimeout(reconnectTimeout);
+          }
+        };
+
+        eventSource.onerror = (error) => {
+          // 接続が閉じられた場合
+          if (eventSource.readyState === EventSource.CLOSED) {
+            if (retryCount < maxRetries) {
+              retryCount++;
+              // 既存のタイムアウトをクリア
+              if (reconnectTimeout) {
+                clearTimeout(reconnectTimeout);
+              }
+
+              // 再接続を試みる
+              reconnectTimeout = setTimeout(() => {
+                eventSource.close();
+                setupEventSource(prompt, llm);
+              }, 1000 * retryCount); // 再試行間隔を徐々に増やす
+            } else {
+              eventSource.close();
+              setError(`接続エラーが発生しました。再度お試しください。(${llm})`);
+              setIsLoading(false);
+            }
+          }
         };
 
         eventSource.onmessage = (event) => {
-          console.log('[SSE] Message received:', {
-            eventType: event.type,
-            dataPreview: event.data.slice(0, 200),
-            timestamp: new Date().toISOString()
-          });
-
           try {
             if (event.data === '[DONE]') {
-              console.log('[SSE] Stream completed');
               eventSource.close();
               setIsLoading(false);
               return;
             }
 
             const data = JSON.parse(event.data);
-            console.log('[SSE] Parsed data:', {
-              type: typeof data,
-              keys: Object.keys(data),
-              textPreview: data.text?.slice(0, 50)
-            });
+            
+            // エラーメッセージの処理
+            if (data.error) {
+              setError(`エラーが発生しました: ${data.error.message || 'Unknown error'}`);
+              eventSource.close();
+              setIsLoading(false);
+              return;
+            }
 
             if (data.text) {
               setCharacterResponses(prev => {
                 const newResponses = [...prev];
                 const responseIndex = newResponses.findIndex(r => r.characterId === character.id);
                 
-                console.log('[Client] Updating response:', {
-                  characterId: character.id,
-                  responseIndex,
-                  currentText: data.text.slice(0, 50)
-                });
-
                 if (responseIndex !== -1) {
                   newResponses[responseIndex] = {
                     ...newResponses[responseIndex],
@@ -160,39 +164,13 @@ export default function Home() {
               });
             }
           } catch (error) {
-            console.error('[SSE] Message processing error:', {
-              error: error.message,
-              data: event.data
-            });
             setError(`メッセージの処理中にエラーが発生しました: ${error.message}`);
             eventSource.close();
             setIsLoading(false);
           }
         };
 
-        eventSource.onerror = (error) => {
-          console.error('[SSE] Error:', {
-            error: error,
-            readyState: eventSource.readyState,
-            timestamp: new Date().toISOString()
-          });
-
-          if (eventSource.readyState === EventSource.CLOSED) {
-            console.log('[SSE] Connection closed');
-            if (retryCount < maxRetries) {
-              console.log('[SSE] Attempting to reconnect...', {
-                attempt: retryCount + 1,
-                maxRetries
-              });
-              retryCount++;
-              setTimeout(() => setupEventSource(prompt, llm), 1000 * retryCount);
-            } else {
-              setError(`${character.name}からの応答中にエラーが発生しました`);
-              setIsLoading(false);
-            }
-            eventSource.close();
-          }
-        };
+        return eventSource;
       };
 
       setupEventSource(currentQuestion, character.llm);

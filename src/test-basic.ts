@@ -1,5 +1,5 @@
-import { ProviderFactory } from './providers/provider-factory';
-import { ProviderConfig } from './types/provider';
+import { ProviderFactory } from '@/app/lib/providers/base/provider-factory';
+import { ProviderConfig } from '@/app/lib/providers/base/ai-provider';
 
 // テスト用の最小限の設定
 const testConfigs: Record<string, ProviderConfig> = {

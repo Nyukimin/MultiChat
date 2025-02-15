@@ -1,6 +1,7 @@
-import { ProviderFactory } from '../providers/provider-factory';
-import { ProviderConfig } from '../types/provider';
-import { ConfigLoader } from '../utils/config-loader';
+import { ProviderFactory } from '@/app/lib/providers/base/provider-factory';
+import { ProviderConfig } from '@/app/lib/providers/base/ai-provider';
+import { ConfigLoader } from '@/app/lib/providers/utils/config-loader';
+import { RateLimiter } from '@/app/lib/providers/utils/rate-limiter';
 
 async function testProviders() {
   try {

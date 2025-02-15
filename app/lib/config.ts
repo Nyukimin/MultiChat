@@ -14,6 +14,12 @@ export interface EnvConfig {
     baseUrl: string;
     model: string;
     maxTokens: number;
+    options?: {
+      temperature?: number;
+      top_k?: number;
+      top_p?: number;
+      repeat_penalty?: number;
+    };
   };
   debug: {
     enabled: boolean;
@@ -24,65 +30,60 @@ export interface EnvConfig {
 // 環境変数設定
 export const envConfig: EnvConfig = {
   anthropic: {
-    apiKey: process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY,
+    apiKey: process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY || '',
     model: 'claude-3-opus-20240229',
-    maxTokens: 1024
+    maxTokens: 4000,
   },
   gemini: {
-    apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY,
+    apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY || '',
     model: 'gemini-pro',
-    maxTokens: 1024
+    maxTokens: 2048,
   },
   ollama: {
     baseUrl: process.env.NEXT_PUBLIC_OLLAMA_BASE_URL || 'http://localhost:11434',
-    model: process.env.NEXT_PUBLIC_OLLAMA_MODEL || 'llama2',
-    maxTokens: 1024
+    model: process.env.NEXT_PUBLIC_OLLAMA_MODEL || 'hf.co/mradermacher/phi-4-deepseek-R1K-RL-EZO-GGUF:Q4_K_S',
+    maxTokens: 2048,
+    options: {
+      temperature: Number(process.env.NEXT_PUBLIC_OLLAMA_TEMPERATURE) || 0.7,
+      top_k: Number(process.env.NEXT_PUBLIC_OLLAMA_TOP_K) || 40,
+      top_p: Number(process.env.NEXT_PUBLIC_OLLAMA_TOP_P) || 0.9,
+      repeat_penalty: Number(process.env.NEXT_PUBLIC_OLLAMA_REPEAT_PENALTY) || 1.1,
+    },
   },
   debug: {
     enabled: process.env.NEXT_PUBLIC_DEBUG_MODE === 'true',
-    chatSpeed: parseInt(process.env.NEXT_PUBLIC_CHAT_SPEED || '5', 10)
-  }
+    chatSpeed: Number(process.env.NEXT_PUBLIC_CHAT_SPEED) || 5,
+  },
 };
 
 // 設定値の検証
 export function validateConfig() {
   console.log('[Config] Validating environment variables...');
-  
-  const missingVars = [];
-  
+
+  // Anthropicの検証
   if (!envConfig.anthropic.apiKey) {
-    missingVars.push('NEXT_PUBLIC_ANTHROPIC_API_KEY');
-  }
-  
-  if (!envConfig.gemini.apiKey) {
-    missingVars.push('NEXT_PUBLIC_GEMINI_API_KEY');
-  }
-  
-  if (!envConfig.ollama.baseUrl) {
-    missingVars.push('NEXT_PUBLIC_OLLAMA_BASE_URL');
+    console.warn('[Config] Anthropic API key is not set');
   }
 
-  if (missingVars.length > 0) {
-    console.warn('[Config] Missing environment variables:', missingVars);
+  // Geminiの検証
+  if (!envConfig.gemini.apiKey) {
+    console.warn('[Config] Gemini API key is not set');
+  }
+
+  // Ollamaの検証
+  if (!envConfig.ollama.baseUrl) {
+    throw new Error('Ollama base URL is required');
   }
 
   console.log('[Config] Current configuration:', {
-    anthropic: {
-      apiKeySet: !!envConfig.anthropic.apiKey,
-      model: envConfig.anthropic.model
-    },
-    gemini: {
-      apiKeySet: !!envConfig.gemini.apiKey,
-      model: envConfig.gemini.model
-    },
+    anthropic: { apiKeySet: !!envConfig.anthropic.apiKey, model: envConfig.anthropic.model },
+    gemini: { apiKeySet: !!envConfig.gemini.apiKey, model: envConfig.gemini.model },
     ollama: {
       baseUrl: envConfig.ollama.baseUrl,
       model: envConfig.ollama.model
     },
     debug: envConfig.debug
   });
-
-  return missingVars.length === 0;
 }
 
 // 設定の初期検証を実行

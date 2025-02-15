@@ -1,119 +1,140 @@
 import { NextRequest } from 'next/server';
-import { ProviderRegistry } from '@/app/lib/providers/base/provider-registry';
+import { ProviderFactory } from '@/app/lib/providers/base/provider-factory';
 import { ProviderError, ErrorCode } from '@/app/lib/providers/base/provider-error';
-import { ClaudeProvider } from '@/app/lib/providers/claude/claude-provider';
-import { GeminiProvider } from '@/app/lib/providers/gemini/gemini-provider';
-import { getEnv, isDebugMode } from '@/app/lib/config';
+import { getEnv, isDebugMode, EnvConfig } from '@/app/lib/config';
 import { RateLimiter } from '@/app/lib/utils/rate-limiter';
 
+type SupportedProvider = 'claude' | 'gemini' | 'ollama';
+
 // レートリミッターの設定
-const rateLimiter = new RateLimiter({
-  maxRequests: 10,  // 最大リクエスト数を増やす
-  interval: 1000,   // インターバルを1秒に設定
-  timeout: 5000     // タイムアウトを5秒に設定
-});
+const rateLimiters: Record<SupportedProvider, RateLimiter> = {
+  claude: new RateLimiter({
+    requestsPerMinute: 20,
+    maxConcurrent: 5
+  }),
+  gemini: new RateLimiter({
+    requestsPerMinute: 30,
+    maxConcurrent: 5
+  }),
+  ollama: new RateLimiter({
+    requestsPerMinute: 60,
+    maxConcurrent: 10
+  })
+};
 
-// プロバイダーの初期化と登録
-const registry = ProviderRegistry.getInstance();
-
+// プロバイダーの初期化
 try {
   // Anthropic APIキーの確認と登録
-  const anthropicConfig = getEnv('anthropic');
+  const anthropicConfig = getEnv('anthropic') as EnvConfig;
   if (anthropicConfig.apiKey) {
-    registry.registerProvider('claude', new ClaudeProvider({
+    ProviderFactory.createProvider('claude', {
+      name: 'claude',
       apiKey: anthropicConfig.apiKey,
       parameters: {
         model: anthropicConfig.model,
         maxTokens: anthropicConfig.maxTokens
       }
-    }));
+    });
     if (isDebugMode()) {
       console.log('[API] Claude provider registered successfully');
     }
   }
 
   // Gemini APIキーの確認と登録
-  const geminiConfig = getEnv('gemini');
+  const geminiConfig = getEnv('gemini') as EnvConfig;
   if (geminiConfig.apiKey) {
-    registry.registerProvider('gemini', new GeminiProvider({
+    ProviderFactory.createProvider('gemini', {
+      name: 'gemini',
       apiKey: geminiConfig.apiKey,
       parameters: {
         model: geminiConfig.model,
         maxTokens: geminiConfig.maxTokens
       }
-    }));
+    });
     if (isDebugMode()) {
       console.log('[API] Gemini provider registered successfully');
     }
   }
+
+  // Ollama設定の確認と登録
+  const ollamaConfig = getEnv('ollama') as EnvConfig;
+  if (ollamaConfig.baseUrl) {
+    ProviderFactory.createProvider('ollama', {
+      name: 'ollama',
+      parameters: {
+        baseUrl: ollamaConfig.baseUrl,
+        model: ollamaConfig.model,
+        maxTokens: ollamaConfig.maxTokens
+      }
+    });
+    if (isDebugMode()) {
+      console.log('[API] Ollama provider registered successfully');
+    }
+  }
 } catch (error) {
-  console.error('[API] Provider initialization error:', error);
-  throw new ProviderError(
-    ErrorCode.INITIALIZATION_ERROR,
-    'Failed to initialize providers',
-    error
-  );
+  console.error('Failed to initialize providers:', error);
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // レートリミットのチェック
-    console.log('[API] Checking rate limit...');
-    const canProceed = await rateLimiter.acquire();
-    console.log('[API] Rate limit check result:', {
-      canProceed,
-      currentRequests: rateLimiter.currentRequests,
-      timestamp: new Date().toISOString()
-    });
+    const { prompt, llm } = await request.json();
 
+    if (!prompt || !llm) {
+      throw new ProviderError(
+        ErrorCode.VALIDATION_ERROR,
+        'プロンプトとLLMの指定は必須です',
+        'API'
+      );
+    }
+
+    const providerType = llm.toLowerCase() as SupportedProvider;
+    
+    // プロバイダー固有のレートリミッターを使用
+    const limiter = rateLimiters[providerType];
+    if (!limiter) {
+      throw new ProviderError(
+        ErrorCode.VALIDATION_ERROR,
+        '不明なプロバイダーです',
+        'API'
+      );
+    }
+
+    const canProceed = await limiter.acquire();
     if (!canProceed) {
       throw new ProviderError(
         ErrorCode.RATE_LIMIT_ERROR,
-        'リクエストが多すぎます。しばらく待って再試行してください',
+        'レート制限を超過しました',
         'API'
       );
     }
 
     try {
-      const { prompt, llm } = await request.json();
+      const providerConfig = getEnv(providerType) as EnvConfig;
+      const provider = ProviderFactory.createProvider(providerType, {
+        name: providerType,
+        parameters: providerConfig
+      });
 
-      // 入力チェック
-      if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
-        throw new ProviderError(
-          ErrorCode.INVALID_REQUEST,
-          '質問を入力してください',
-          'API'
-        );
-      }
-
-      if (!llm || typeof llm !== 'string') {
-        throw new ProviderError(
-          ErrorCode.INVALID_REQUEST,
-          'LLMを選択してください',
-          'API'
-        );
-      }
-
-      // プロバイダの取得
-      const provider = registry.getProvider(llm.toLowerCase());
-
-      // ストリーミングレスポンスの生成
-      console.log('Starting stream for LLM:', llm);
-      console.log('Prompt:', prompt.slice(0, 50) + '...');
-      
       const stream = await provider.streamChat(prompt);
 
-      return new Response(stream, {
+      const response = new Response(stream, {
         headers: {
-          'Content-Type': 'text/event-stream; charset=utf-8',
-          'Cache-Control': 'no-cache',
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache, no-transform',
           'Connection': 'keep-alive',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
           'X-Accel-Buffering': 'no'
-        }
+        },
       });
+
+      return response;
+    } catch (error) {
+      console.error('Error in chat endpoint:', error);
+      throw error;
     } finally {
-      // リクエスト完了時にレートリミットを解放
-      rateLimiter.release();
+      limiter.release();
     }
   } catch (error) {
     console.error('Error in chat endpoint:', error);
@@ -139,171 +160,83 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  const encoder = new TextEncoder();
-
   try {
-    console.log('[API] Received request:', {
-      method: request.method,
-      url: request.url,
-      headers: Object.fromEntries(request.headers)
-    });
-
-    const searchParams = new URLSearchParams(new URL(request.url).search);
+    const searchParams = request.nextUrl.searchParams;
     const prompt = searchParams.get('prompt');
-    const llm = searchParams.get('llm')?.toLowerCase();
-
-    console.log('[API] Parsed parameters:', {
-      prompt,
-      llm,
-      timestamp: new Date().toISOString()
-    });
+    const llm = searchParams.get('llm')?.toLowerCase() as SupportedProvider;
 
     if (!prompt || !llm) {
       throw new ProviderError(
         ErrorCode.VALIDATION_ERROR,
-        'Missing required parameters: prompt or llm',
+        'プロンプトとLLMの指定は必須です',
         'API'
       );
     }
 
-    // レートリミットのチェック
-    console.log('[API] Checking rate limit...');
-    const canProceed = await rateLimiter.acquire();
-    console.log('[API] Rate limit check result:', {
-      canProceed,
-      currentRequests: rateLimiter.currentRequests,
-      timestamp: new Date().toISOString()
-    });
+    // プロバイダー固有のレートリミッターを使用
+    const limiter = rateLimiters[llm];
+    if (!limiter) {
+      throw new ProviderError(
+        ErrorCode.VALIDATION_ERROR,
+        '不明なプロバイダーです',
+        'API'
+      );
+    }
 
+    const canProceed = await limiter.acquire();
     if (!canProceed) {
       throw new ProviderError(
         ErrorCode.RATE_LIMIT_ERROR,
-        'Too many requests. Please wait a moment before trying again.',
-        'RateLimiter'
+        'レート制限を超過しました',
+        'API'
       );
     }
 
     try {
-      console.log('[API] Getting provider for:', llm);
-      const provider = registry.getProvider(llm);
-      
-      if (!provider) {
-        throw new ProviderError(
-          ErrorCode.PROVIDER_NOT_FOUND,
-          `Provider not found for LLM: ${llm}`,
-          'API'
-        );
-      }
-
-      console.log('[API] Selected provider:', {
+      const providerConfig = getEnv(llm) as EnvConfig;
+      const provider = ProviderFactory.createProvider(llm, {
         name: llm,
-        config: provider.config,
-        availableMethods: Object.keys(provider)
+        parameters: providerConfig
       });
+      const stream = await provider.streamChat(prompt);
 
-      // チャットストリームの作成
-      console.log('[API] Creating chat stream with prompt:', prompt.slice(0, 50));
-      const chatStream = await provider.streamChat(prompt);
-      console.log('[API] Chat stream created successfully');
-
-      // ストリーム変換の設定
-      const transformStream = new TransformStream({
-        async transform(chunk, controller) {
-          console.log('[Stream] Processing chunk:', {
-            type: typeof chunk,
-            length: chunk?.length,
-            preview: typeof chunk === 'string' ? chunk.slice(0, 50) : 'non-string chunk'
-          });
-
-          try {
-            let text;
-            if (typeof chunk === 'string') {
-              text = chunk;
-            } else if (chunk instanceof Uint8Array) {
-              text = new TextDecoder().decode(chunk);
-            } else {
-              console.warn('[Stream] Unexpected chunk type:', typeof chunk);
-              return;
-            }
-
-            console.log('[Stream] Transformed text:', {
-              length: text.length,
-              preview: text.slice(0, 100)
-            });
-
-            if (text.trim()) {
-              const message = `data: ${JSON.stringify({ text })}\n\n`;
-              controller.enqueue(encoder.encode(message));
-            }
-          } catch (error) {
-            console.error('[Stream] Transform error:', {
-              error: error.message,
-              stack: error.stack,
-              chunkType: typeof chunk
-            });
-            throw error;
-          }
-        },
-        flush(controller) {
-          console.log('[Stream] Stream completed');
-          const message = `data: [DONE]\n\n`;
-          controller.enqueue(encoder.encode(message));
-        }
-      });
-
-      // ストリームの連結
-      const responseStream = chatStream.pipeThrough(transformStream);
-      console.log('[API] Stream pipeline established');
-
-      // レスポンスの返却
-      const response = new Response(responseStream, {
+      const response = new Response(stream, {
         headers: {
           'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
+          'Cache-Control': 'no-cache, no-transform',
           'Connection': 'keep-alive',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
+          'X-Accel-Buffering': 'no'
         },
-      });
-
-      console.log('[API] Response created:', {
-        status: response.status,
-        headers: Object.fromEntries(response.headers),
-        timestamp: new Date().toISOString()
       });
 
       return response;
-
     } catch (error) {
-      console.error('[API] Provider error:', {
-        message: error.message,
-        code: error.code,
-        stack: error.stack
-      });
+      console.error('Error in chat endpoint:', error);
       throw error;
     } finally {
-      rateLimiter.release();
+      limiter.release();
+    }
+  } catch (error) {
+    console.error('Error in chat endpoint:', error);
+    
+    if (error instanceof ProviderError) {
+      return new Response(
+        JSON.stringify({ error: error.message }),
+        { 
+          status: error.code === ErrorCode.RATE_LIMIT_ERROR ? 429 : 500,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
     }
 
-  } catch (error) {
-    console.error('[API] Request error:', {
-      message: error.message,
-      code: error.code,
-      stack: error.stack,
-      url: request.url
-    });
-
-    // エラーレスポンスの返却
     return new Response(
-      JSON.stringify({
-        error: error.message || 'Internal Server Error',
-        code: error.code || 'UNKNOWN_ERROR',
-        timestamp: new Date().toISOString()
-      }),
-      {
-        status: error.code === ErrorCode.RATE_LIMIT_ERROR ? 429 : 500,
-        headers: { 
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache'
-        }
+      JSON.stringify({ error: 'サーバーエラーが発生しました' }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
       }
     );
   }

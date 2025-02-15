@@ -1,116 +1,106 @@
-import { Anthropic } from '@anthropic-ai/sdk';
 import { AIProvider, ProviderConfig } from '../base/ai-provider';
-import { ProviderError, ErrorCode } from '../base/provider-error';
+import { ErrorCode, ProviderError } from '../base/provider-error';
 
 export class ClaudeProvider extends AIProvider {
-  private client: Anthropic;
-  private config: ProviderConfig;
+  private readonly apiKey: string;
 
   constructor(config: ProviderConfig) {
-    console.log('[Claude] Initializing provider with config:', {
-      model: config.parameters.model,
-      maxTokens: config.parameters.maxTokens,
-      apiKeyLength: config.apiKey?.length
-    });
+    super(config);
 
+    const apiKey = config.apiKey;
+    if (!apiKey) {
+      throw new ProviderError(
+        ErrorCode.CONFIGURATION_ERROR,
+        'Claude API key is not configured',
+        'Claude'
+      );
+    }
+    this.apiKey = apiKey;
+  }
+
+  async streamChat(prompt: string): Promise<ReadableStream> {
     try {
-      if (!config.apiKey) {
+      console.log('[Claude] リクエスト開始', {
+        model: this.config.parameters.model,
+        timestamp: new Date().toISOString()
+      });
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': this.apiKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: this.config.parameters.model || 'claude-3-opus-20240229',
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: this.config.parameters.maxTokens || 1024,
+          stream: true
+        })
+      });
+
+      if (!response.ok) {
         throw new ProviderError(
-          ErrorCode.CONFIGURATION_ERROR,
-          'Anthropic API key is not configured',
+          ErrorCode.API_ERROR,
+          `Claudeサーバーエラー: ${response.status} ${response.statusText}`,
           'Claude'
         );
       }
 
-      super(config);
-      this.config = config;
-      this.client = new Anthropic({
-        apiKey: config.apiKey
-      });
+      if (!response.body) {
+        throw new ProviderError(
+          ErrorCode.STREAM_ERROR,
+          'ストリームの初期化に失敗しました',
+          'Claude'
+        );
+      }
 
-      console.log('[Claude] Provider initialized successfully');
-    } catch (error) {
-      console.error('[Claude] Initialization error:', {
-        message: error.message,
-        code: error.code,
-        stack: error.stack
-      });
-      throw error;
-    }
-  }
-
-  async streamChat(prompt: string): Promise<ReadableStream> {
-    console.log('[Claude] Starting chat stream:', {
-      promptLength: prompt.length,
-      model: this.config.parameters.model,
-      apiKeyPreview: this.config.apiKey?.slice(0, 5)
-    });
-
-    try {
-      const response = await this.client.messages.create({
-        messages: [{ role: 'user', content: prompt }],
-        model: this.config.parameters.model || 'claude-3-opus-20240229',
-        max_tokens: this.config.parameters.maxTokens || 1024,
-        stream: true
-      });
-
-      console.log('[Claude] API response initialized:', {
-        status: 'streaming',
-        timestamp: new Date().toISOString()
-      });
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
 
       return new ReadableStream({
         async start(controller) {
-          console.log('[Claude] Stream start');
           try {
-            for await (const chunk of response) {
-              console.log('[Claude] Received chunk:', {
-                type: chunk.type,
-                contentType: chunk.content ? typeof chunk.content : 'undefined',
-                timestamp: new Date().toISOString()
-              });
+            while (true) {
+              const { done, value } = await reader.read();
 
-              if (chunk.type === 'message_start') {
-                console.log('[Claude] Message started');
-              } else if (chunk.type === 'content_block_start') {
-                console.log('[Claude] Content block started');
-              } else if (chunk.type === 'content_block_delta') {
-                const text = chunk.delta?.text;
-                if (text) {
-                  console.log('[Claude] Processing text chunk:', {
-                    length: text.length,
-                    preview: text.slice(0, 50)
-                  });
-                  controller.enqueue(text);
-                }
-              } else if (chunk.type === 'content_block_stop') {
-                console.log('[Claude] Content block completed');
-              } else if (chunk.type === 'message_stop') {
-                console.log('[Claude] Message completed');
+              if (done) {
                 controller.close();
                 break;
               }
+
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split('\n');
+              buffer = lines.pop() || '';
+
+              for (const line of lines) {
+                if (line.trim() === '') continue;
+                if (line === 'data: [DONE]') {
+                  controller.close();
+                  return;
+                }
+
+                try {
+                  const data = JSON.parse(line.replace(/^data: /, ''));
+                  if (data.type === 'content_block_delta') {
+                    controller.enqueue(data.delta.text);
+                  }
+                } catch (error) {
+                  console.error('[Claude] JSONパースエラー:', error);
+                  continue;
+                }
+              }
             }
           } catch (error) {
-            console.error('[Claude] Stream processing error:', {
-              message: error.message,
-              stack: error.stack,
-              timestamp: new Date().toISOString()
-            });
+            console.error('[Claude] ストリームエラー:', error);
             controller.error(error);
           }
-        },
-        cancel() {
-          console.log('[Claude] Stream cancelled');
-          // ストリームがキャンセルされた場合の処理
         }
       });
     } catch (error) {
-      console.error('[Claude] API error:', {
-        message: error.message,
-        code: error.code,
-        stack: error.stack
-      });
+      console.error('[Claude] リクエストエラー:', error);
       throw error;
     }
   }
