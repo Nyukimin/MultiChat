@@ -28,12 +28,9 @@ export class GeminiProvider implements LLMProvider {
         model: params?.model || this.config.parameters.model || 'gemini-pro'
       });
 
-      const result = await model.generateContentStream([
-        {
-          role: 'user',
-          parts: [{ text: prompt }]
-        }
-      ]);
+      const result = await model.generateContentStream({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }]
+      });
 
       for await (const chunk of result.stream) {
         const text = chunk.text();
