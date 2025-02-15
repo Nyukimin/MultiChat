@@ -1,6 +1,7 @@
 import { AIProvider, BaseProviderParameters, ProviderConfig } from '../base/ai-provider';
 import { ErrorCode, ProviderError } from '../base/provider-error';
 import { isDebugMode } from '@/app/lib/config';
+import { OllamaConfig, defaultConfig } from './config';
 
 interface OllamaOptions {
   temperature?: number;
@@ -13,18 +14,13 @@ interface OllamaOptions {
 interface OllamaParameters extends BaseProviderParameters {
   model?: string;
   baseUrl: string;
-  options?: OllamaOptions;
+  options?: OllamaConfig['options'];
 }
 
 export class OllamaProvider extends AIProvider<OllamaParameters> {
   private readonly baseUrl: string;
-  private readonly defaultModel: string = 'hf.co/mradermacher/phi-4-deepseek-R1K-RL-EZO-GGUF:Q4_K_S';
-  private readonly defaultOptions: OllamaOptions = {
-    temperature: 0.7,
-    top_k: 40,
-    top_p: 0.9,
-    repeat_penalty: 1.1
-  };
+  private readonly defaultModel: string = defaultConfig.model;
+  private readonly defaultOptions: OllamaConfig['options'] = defaultConfig.options;
 
   constructor(config: ProviderConfig<OllamaParameters>) {
     super(config);

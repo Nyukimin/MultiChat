@@ -1,8 +1,9 @@
 import { NextRequest } from 'next/server';
 import { ProviderFactory } from '@/app/lib/providers/base/provider-factory';
 import { ProviderError, ErrorCode } from '@/app/lib/providers/base/provider-error';
-import { getEnv, isDebugMode, EnvConfig } from '@/app/lib/config';
+import { getEnv, isDebugMode } from '@/app/lib/config';
 import { RateLimiter } from '@/app/lib/utils/rate-limiter';
+import { getOllamaConfig } from '@/app/lib/providers/ollama/config';
 
 type SupportedProvider = 'claude' | 'gemini' | 'ollama';
 
@@ -25,7 +26,7 @@ const rateLimiters: Record<SupportedProvider, RateLimiter> = {
 // プロバイダーの初期化
 try {
   // Anthropic APIキーの確認と登録
-  const anthropicConfig = getEnv('anthropic') as EnvConfig;
+  const anthropicConfig = getEnv('anthropic');
   if (anthropicConfig.apiKey) {
     ProviderFactory.createProvider('claude', {
       name: 'claude',
@@ -41,7 +42,7 @@ try {
   }
 
   // Gemini APIキーの確認と登録
-  const geminiConfig = getEnv('gemini') as EnvConfig;
+  const geminiConfig = getEnv('gemini');
   if (geminiConfig.apiKey) {
     ProviderFactory.createProvider('gemini', {
       name: 'gemini',
@@ -57,7 +58,7 @@ try {
   }
 
   // Ollama設定の確認と登録
-  const ollamaConfig = getEnv('ollama') as EnvConfig;
+  const ollamaConfig = getOllamaConfig();
   if (ollamaConfig.baseUrl) {
     ProviderFactory.createProvider('ollama', {
       name: 'ollama',
@@ -109,7 +110,13 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      const providerConfig = getEnv(providerType) as EnvConfig;
+      let providerConfig;
+      if (providerType === 'ollama') {
+        providerConfig = getOllamaConfig();
+      } else {
+        providerConfig = getEnv(providerType);
+      }
+
       const provider = ProviderFactory.createProvider(providerType, {
         name: providerType,
         parameters: providerConfig
@@ -193,7 +200,13 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-      const providerConfig = getEnv(llm) as EnvConfig;
+      let providerConfig;
+      if (llm === 'ollama') {
+        providerConfig = getOllamaConfig();
+      } else {
+        providerConfig = getEnv(llm);
+      }
+
       const provider = ProviderFactory.createProvider(llm, {
         name: llm,
         parameters: providerConfig
