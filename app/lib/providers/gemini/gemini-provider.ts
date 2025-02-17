@@ -1,13 +1,15 @@
 import { AIProvider, ProviderConfig } from '../base/ai-provider';
 import { ErrorCode, ProviderError } from '../base/provider-error';
+import config from '../../config/config';
 
 export class GeminiProvider extends AIProvider {
   private readonly apiKey: string;
+  private readonly baseUrl: string;
 
-  constructor(config: ProviderConfig) {
-    super(config);
+  constructor(providerConfig: ProviderConfig) {
+    super(providerConfig);
 
-    const apiKey = config.apiKey;
+    const apiKey = providerConfig.apiKey;
     if (!apiKey) {
       throw new ProviderError(
         ErrorCode.CONFIGURATION_ERROR,
@@ -16,19 +18,20 @@ export class GeminiProvider extends AIProvider {
       );
     }
     this.apiKey = apiKey;
+    this.baseUrl = 'https://generativelanguage.googleapis.com';
   }
 
   async streamChat(prompt: string): Promise<ReadableStream> {
     try {
       console.log('[Gemini] リクエスト開始', {
-        model: this.config.parameters.model,
+        model: this.config.parameters.model || 'gemini-pro',
         timestamp: new Date().toISOString()
       });
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/${this.config.parameters.model || 'gemini-pro'}:streamGenerateContent?key=${this.apiKey}`, {
+      const response = await fetch(`${this.baseUrl}/v1/models/gemini-pro:streamGenerateContent?key=${this.apiKey}`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           contents: [{
@@ -37,16 +40,22 @@ export class GeminiProvider extends AIProvider {
             }]
           }],
           generationConfig: {
-            maxOutputTokens: this.config.parameters.maxTokens || 1024,
-            temperature: 0.7
+            maxOutputTokens: this.config.parameters.maxTokens || 2048,
+            temperature: this.config.parameters.temperature || 0.7
           }
         })
       });
 
       if (!response.ok) {
+        const errorBody = await response.text();
+        console.error('[Gemini] APIエラー詳細:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorBody
+        });
         throw new ProviderError(
           ErrorCode.API_ERROR,
-          `Geminiサーバーエラー: ${response.status} ${response.statusText}`,
+          `Geminiサーバーエラー: ${response.status} ${response.statusText}\n${errorBody}`,
           'Gemini'
         );
       }
@@ -70,27 +79,32 @@ export class GeminiProvider extends AIProvider {
               const { done, value } = await reader.read();
 
               if (done) {
+                console.log('[Gemini] ストリーム終了');
                 controller.close();
                 break;
               }
 
               buffer += decoder.decode(value, { stream: true });
-              const lines = buffer.split('\n');
-              buffer = lines.pop() || '';
+              console.log('[Gemini] バッファ:', buffer);
 
-              for (const line of lines) {
-                if (line.trim() === '') continue;
-
-                try {
-                  const data = JSON.parse(line);
-                  if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
-                    controller.enqueue(data.candidates[0].content.parts[0].text);
+              try {
+                // 完全なJSONを探す
+                if (buffer.startsWith('[{') && buffer.endsWith(']')) {
+                  const data = JSON.parse(buffer);
+                  if (Array.isArray(data) && data.length > 0) {
+                    const text = data[0]?.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (text) {
+                      console.log('[Gemini] テキスト抽出:', text);
+                      controller.enqueue('data: ' + JSON.stringify({ text }) + '\n\n');
+                    }
+                    buffer = '';
                   }
-                } catch (error) {
-                  console.error('[Gemini] JSONパースエラー:', error);
-                  continue;
                 }
+              } catch (error) {
+                console.error('[Gemini] JSONパースエラー:', error);
               }
+
+              console.log('[Gemini] 受信データ:', value);
             }
           } catch (error) {
             console.error('[Gemini] ストリームエラー:', error);

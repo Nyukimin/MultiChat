@@ -1,27 +1,42 @@
 import { Character } from '../types/character';
-import { createChatCompletion } from './chatCompletion';
 
-export async function getCharacterResponse(character: Character, message: string) {
-  try {
-    const response = await fetch('/api/character/response', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        character,
-        message
-      })
-    });
+export async function getCharacterResponse(character: Character, message: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    try {
+      const eventSource = new EventSource(
+        `/api/chat?prompt=${encodeURIComponent(message)}&llm=${character.id}`
+      );
 
-    if (!response.ok) {
-      throw new Error('キャラクターレスポンスの取得に失敗');
+      let result = '';
+
+      eventSource.onmessage = (event) => {
+        console.log('[フロントエンド] 受信データ:', event.data);
+        
+        if (event.data === '[DONE]') {
+          eventSource.close();
+          resolve(result);
+          return;
+        }
+
+        try {
+          const data = JSON.parse(event.data);
+          if (data.text) {
+            result += data.text;
+          }
+        } catch (error) {
+          console.error('[フロントエンド] JSONパースエラー:', error);
+        }
+      };
+
+      eventSource.onerror = (error) => {
+        console.error('[フロントエンド] SSEエラー:', error);
+        eventSource.close();
+        reject(new Error('ストリーミング中にエラーが発生しました'));
+      };
+
+    } catch (error) {
+      console.error('[フロントエンド] 接続エラー:', error);
+      reject(error);
     }
-
-    const data = await response.json();
-    return data.response;
-  } catch (error) {
-    console.error('キャラクターレスポンスの取得中にエラー:', error);
-    throw error;
-  }
+  });
 }

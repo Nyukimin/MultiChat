@@ -1,76 +1,72 @@
 import { NextRequest } from 'next/server';
 import { ProviderFactory } from '@/app/lib/providers/base/provider-factory';
 import { ProviderError, ErrorCode } from '@/app/lib/providers/base/provider-error';
-import { getEnv, isDebugMode } from '@/app/lib/config';
 import { RateLimiter } from '@/app/lib/utils/rate-limiter';
-import { getOllamaConfig } from '@/app/lib/providers/ollama/config';
+import config from '@/app/lib/config/config';
 
 type SupportedProvider = 'claude' | 'gemini' | 'ollama';
 
 // レートリミッターの設定
 const rateLimiters: Record<SupportedProvider, RateLimiter> = {
   claude: new RateLimiter({
-    requestsPerMinute: 20,
-    maxConcurrent: 5
+    requestsPerMinute: config.api.anthropic.rateLimit.requestsPerMinute,
+    maxConcurrent: config.api.anthropic.rateLimit.maxConcurrent
   }),
   gemini: new RateLimiter({
-    requestsPerMinute: 30,
-    maxConcurrent: 5
+    requestsPerMinute: config.api.gemini.rateLimit.requestsPerMinute,
+    maxConcurrent: config.api.gemini.rateLimit.maxConcurrent
   }),
   ollama: new RateLimiter({
-    requestsPerMinute: 60,
-    maxConcurrent: 10
+    requestsPerMinute: config.ollama.rateLimit.requestsPerMinute,
+    maxConcurrent: config.ollama.rateLimit.maxConcurrent
   })
 };
+
+// 重複リクエストチェック用のマップ
+const lastRequests = new Map<string, { prompt: string; timestamp: number }>();
+const DUPLICATE_THRESHOLD_MS = 1000; // 1秒以内の同一プロンプトは重複とみなす
 
 // プロバイダーの初期化
 try {
   // Anthropic APIキーの確認と登録
-  const anthropicConfig = getEnv('anthropic');
-  if (anthropicConfig.apiKey) {
+  console.log('[API] 設定確認:', {
+    anthropicKeyLength: config.api.anthropic.apiKey.length,
+    anthropicKeyPrefix: config.api.anthropic.apiKey.substring(0, 15),
+    baseUrl: config.api.anthropic.baseUrl,
+  });
+
+  if (config.api.anthropic.apiKey) {
     ProviderFactory.createProvider('claude', {
-      name: 'claude',
-      apiKey: anthropicConfig.apiKey,
+      apiKey: config.api.anthropic.apiKey,
       parameters: {
-        model: anthropicConfig.model,
-        maxTokens: anthropicConfig.maxTokens
+        model: config.api.anthropic.model,
+        maxTokens: config.api.anthropic.maxTokens,
+        temperature: config.api.anthropic.temperature,
       }
     });
-    if (isDebugMode()) {
-      console.log('[API] Claude provider registered successfully');
-    }
   }
 
   // Gemini APIキーの確認と登録
-  const geminiConfig = getEnv('gemini');
-  if (geminiConfig.apiKey) {
+  if (config.api.gemini.apiKey) {
     ProviderFactory.createProvider('gemini', {
-      name: 'gemini',
-      apiKey: geminiConfig.apiKey,
+      apiKey: config.api.gemini.apiKey,
       parameters: {
-        model: geminiConfig.model,
-        maxTokens: geminiConfig.maxTokens
+        model: config.api.gemini.model,
+        maxTokens: config.api.gemini.maxTokens,
+        temperature: config.api.gemini.temperature,
       }
     });
-    if (isDebugMode()) {
-      console.log('[API] Gemini provider registered successfully');
-    }
   }
 
   // Ollama設定の確認と登録
-  const ollamaConfig = getOllamaConfig();
-  if (ollamaConfig.baseUrl) {
+  if (config.ollama.baseUrl) {
     ProviderFactory.createProvider('ollama', {
-      name: 'ollama',
       parameters: {
-        baseUrl: ollamaConfig.baseUrl,
-        model: ollamaConfig.model,
-        maxTokens: ollamaConfig.maxTokens
+        baseUrl: config.ollama.baseUrl,
+        model: config.ollama.model,
+        maxTokens: config.ollama.maxTokens,
       }
     });
-    if (isDebugMode()) {
-      console.log('[API] Ollama provider registered successfully');
-    }
   }
 } catch (error) {
   console.error('Failed to initialize providers:', error);
@@ -89,6 +85,28 @@ export async function POST(request: NextRequest) {
     }
 
     const providerType = llm.toLowerCase() as SupportedProvider;
+
+    // 重複リクエストのチェック
+    const key = `${providerType}:${prompt}`;
+    const lastRequest = lastRequests.get(key);
+    const now = Date.now();
+    
+    if (lastRequest && (now - lastRequest.timestamp) < DUPLICATE_THRESHOLD_MS) {
+      throw new ProviderError(
+        ErrorCode.RATE_LIMIT_ERROR,
+        '同一のリクエストが短時間に複数回送信されました',
+        'API'
+      );
+    }
+    
+    lastRequests.set(key, { prompt, timestamp: now });
+    
+    // 古いリクエスト履歴のクリーンアップ
+    for (const [key, value] of lastRequests.entries()) {
+      if (now - value.timestamp > DUPLICATE_THRESHOLD_MS * 2) {
+        lastRequests.delete(key);
+      }
+    }
     
     // プロバイダー固有のレートリミッターを使用
     const limiter = rateLimiters[providerType];
@@ -112,9 +130,9 @@ export async function POST(request: NextRequest) {
     try {
       let providerConfig;
       if (providerType === 'ollama') {
-        providerConfig = getOllamaConfig();
+        providerConfig = config.ollama;
       } else {
-        providerConfig = getEnv(providerType);
+        providerConfig = config.api[providerType];
       }
 
       const provider = ProviderFactory.createProvider(providerType, {
@@ -180,6 +198,28 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // 重複リクエストのチェック
+    const key = `${llm}:${prompt}`;
+    const lastRequest = lastRequests.get(key);
+    const now = Date.now();
+    
+    if (lastRequest && (now - lastRequest.timestamp) < DUPLICATE_THRESHOLD_MS) {
+      throw new ProviderError(
+        ErrorCode.RATE_LIMIT_ERROR,
+        '同一のリクエストが短時間に複数回送信されました',
+        'API'
+      );
+    }
+    
+    lastRequests.set(key, { prompt, timestamp: now });
+    
+    // 古いリクエスト履歴のクリーンアップ
+    for (const [key, value] of lastRequests.entries()) {
+      if (now - value.timestamp > DUPLICATE_THRESHOLD_MS * 2) {
+        lastRequests.delete(key);
+      }
+    }
+    
     // プロバイダー固有のレートリミッターを使用
     const limiter = rateLimiters[llm];
     if (!limiter) {
@@ -202,9 +242,9 @@ export async function GET(request: NextRequest) {
     try {
       let providerConfig;
       if (llm === 'ollama') {
-        providerConfig = getOllamaConfig();
+        providerConfig = config.ollama;
       } else {
-        providerConfig = getEnv(llm);
+        providerConfig = config.api[llm];
       }
 
       const provider = ProviderFactory.createProvider(llm, {

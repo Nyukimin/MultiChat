@@ -124,16 +124,21 @@ export default function Home() {
 
         eventSource.onmessage = (event) => {
           try {
+            console.log('[フロントエンド] 受信データ:', event.data);
+
             if (event.data === '[DONE]') {
+              console.log('[フロントエンド] 完了シグナル受信');
               eventSource.close();
               setIsLoading(false);
               return;
             }
 
             const data = JSON.parse(event.data);
+            console.log('[フロントエンド] パース済みデータ:', data);
             
             // エラーメッセージの処理
             if (data.error) {
+              console.error('[フロントエンド] エラー受信:', data.error);
               setError(`エラーが発生しました: ${data.error.message || 'Unknown error'}`);
               eventSource.close();
               setIsLoading(false);
@@ -141,6 +146,7 @@ export default function Home() {
             }
 
             if (data.text) {
+              console.log('[フロントエンド] テキスト受信:', data.text);
               setCharacterResponses(prev => {
                 const newResponses = [...prev];
                 const responseIndex = newResponses.findIndex(r => r.characterId === character.id);
