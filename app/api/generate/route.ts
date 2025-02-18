@@ -2,15 +2,19 @@ import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import config from '@/app/lib/config/config';
 
-export async function POST(request: Request) {
+// EventSourceはGETメソッドのみをサポートするため、POSTメソッドは提供しない
+// Server-Sent Events (SSE)を使用してAIプロバイダーからのストリーミングレスポンスを実現
+export async function GET(request: Request) {
   try {
     // APIキーの存在確認
     if (!config.api.anthropic.apiKey) {
       throw new Error('Anthropic APIキーが設定されていません');
     }
 
-    // リクエストボディを解析
-    const { instruction, characters } = await request.json();
+    // URLパラメータを解析
+    const url = new URL(request.url);
+    const instruction = url.searchParams.get('instruction');
+    const characters = url.searchParams.get('characters')?.split(',');
 
     if (!instruction || !characters || characters.length === 0) {
       throw new Error('指示内容またはキャラクター選択が不正です');
@@ -49,26 +53,37 @@ ${instruction}
             message: response.content[0].text
           };
         } catch (error) {
-          console.error(`Error for character ${characterId}:`, error);
+          console.error(`Error generating response for ${characterId}:`, error);
           return {
             characterId,
-            message: `エラーが発生しました: ${error instanceof Error ? error.message : '不明なエラー'}`
+            error: error instanceof Error ? error.message : 'Unknown error'
           };
         }
       })
     );
 
-    // レスポンスを返す
-    return NextResponse.json({
-      responses: characterResponses
-    });
+    return new Response(
+      JSON.stringify({ responses: characterResponses }),
+      { 
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+        }
+      }
+    );
 
   } catch (error) {
-    console.error('API呼び出し中にエラーが発生:', error);
-    
-    return NextResponse.json({
-      error: 'APIの呼び出し中にエラーが発生しました',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    console.error('Error in generate endpoint:', error);
+    return new Response(
+      JSON.stringify({ 
+        error: 'キャラクターレスポンスの生成に失敗しました',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
   }
 }

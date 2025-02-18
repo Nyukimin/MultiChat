@@ -3,9 +3,17 @@ import Anthropic from '@anthropic-ai/sdk';
 import config from '@/app/lib/config/config';
 import { loadCharacterPrompt } from '@/app/lib/utils/characterLoader';
 
-export async function POST(request: Request) {
+// EventSourceはGETメソッドのみをサポートするため、POSTメソッドは提供しない
+// Server-Sent Events (SSE)を使用してAIプロバイダーからのストリーミングレスポンスを実現
+export async function GET(request: Request) {
   try {
-    const { character, message } = await request.json();
+    const url = new URL(request.url);
+    const characterId = url.searchParams.get('character');
+    const message = url.searchParams.get('message');
+
+    if (!characterId || !message) {
+      throw new Error('キャラクターIDとメッセージは必須です');
+    }
 
     // サーバーサイドでのみAnthropicクライアントを初期化
     const anthropic = new Anthropic({
@@ -14,7 +22,7 @@ export async function POST(request: Request) {
     });
 
     // キャラクター固有のシステムプロンプトをロード
-    const systemPrompt = await loadCharacterPrompt(character.id);
+    const systemPrompt = await loadCharacterPrompt(characterId);
 
     // Anthropic APIを呼び出し
     const response = await anthropic.messages.create({
@@ -28,16 +36,29 @@ export async function POST(request: Request) {
     });
 
     // レスポンスを返す
-    return NextResponse.json({
-      response: response.content[0].text
-    });
+    return new Response(
+      JSON.stringify({ response: response.content[0].text }),
+      { 
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache'
+        }
+      }
+    );
 
   } catch (error) {
     console.error('キャラクターレスポンス生成中にエラー:', error);
     
-    return NextResponse.json({
-      error: 'キャラクターレスポンスの生成に失敗しました',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return new Response(
+      JSON.stringify({
+        error: 'キャラクターレスポンスの生成に失敗しました',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
   }
 }
