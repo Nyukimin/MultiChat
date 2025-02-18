@@ -1,0 +1,61 @@
+
+> multichat-app@0.1.0 dev
+> next dev --turbopack
+
+   笆ｲ Next.js 15.1.6 (Turbopack)
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.1.33:3000
+   - Environments: .env.local, .env
+
+ 笨・Starting...
+Slow filesystem detected. If E:\GenerativeAI\LLM\AIChat\ai-multi-chat\app_04\MultiChat\.next is a network drive, consider moving it to a local folder. If you have an antivirus enabled, consider excluding your project directory.
+ 笨・Ready in 1059ms
+ 笳・Compiling /api/chat ...
+ 笨・Compiled /api/chat in 704ms
+ 笳・Compiling /_error ...
+ 笨・Compiled /_error in 552ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=claude 500 in 1374ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=gemini 500 in 1384ms
+ 笳・Compiling / ...
+ 笨・Compiled / in 1453ms
+ GET / 500 in 1492ms
+ 笨・Compiled /favicon.ico in 66ms
+ GET /favicon.ico 500 in 82ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=claude 500 in 46ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=gemini 500 in 49ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=claude 500 in 45ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=gemini 500 in 46ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=claude 500 in 42ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=gemini 500 in 43ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=claude 500 in 48ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=gemini 500 in 49ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=gemini 500 in 46ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=claude 500 in 51ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=claude 500 in 43ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=gemini 500 in 45ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=claude 500 in 44ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=gemini 500 in 46ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=claude 500 in 47ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=gemini 500 in 48ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=claude 500 in 44ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=gemini 500 in 48ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=claude 500 in 44ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=gemini 500 in 47ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=claude 500 in 46ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=gemini 500 in 48ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=claude 500 in 46ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=gemini 500 in 48ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=claude 500 in 41ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=gemini 500 in 44ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=claude 500 in 41ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=gemini 500 in 45ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=gemini 500 in 41ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=claude 500 in 45ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=claude 500 in 52ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=gemini 500 in 53ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=claude 500 in 42ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=gemini 500 in 44ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=gemini 500 in 40ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=claude 500 in 43ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=claude 500 in 41ms
+ GET /api/chat?prompt=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF&llm=gemini 500 in 45ms

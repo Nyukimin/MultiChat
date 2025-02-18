@@ -3,8 +3,38 @@ import { ProviderFactory } from '@/app/lib/providers/base/provider-factory';
 import { ProviderError, ErrorCode } from '@/app/lib/providers/base/provider-error';
 import { RateLimiter } from '@/app/lib/utils/rate-limiter';
 import config from '@/app/lib/config/config';
+import { requestTracker } from '@/app/lib/request-tracker/request-tracker';
+import { providerLogger } from '@/app/lib/request-tracker/logger/provider-logger';
+import { RequestTrackerError } from '@/app/lib/request-tracker/errors/request-tracker-error';
 
+// 型定義
 type SupportedProvider = 'claude' | 'gemini' | 'ollama';
+
+interface BaseProviderParameters {
+  model: string;
+  maxTokens?: number;
+  temperature?: number;
+  baseUrl?: string;
+}
+
+interface ProviderConfig<T extends BaseProviderParameters> {
+  name: string;
+  apiKey?: string;
+  parameters: T;
+}
+
+interface RateLimiterConfig {
+  requestsPerMinute: number;
+  maxConcurrent: number;
+}
+
+interface ApiConfig {
+  [key: string]: {
+    apiKey?: string;
+    baseUrl?: string;
+    rateLimit: RateLimiterConfig;
+  };
+}
 
 // 初期化済みのプロバイダーを保持
 const initializedProviders = new Map<SupportedProvider, any>();
@@ -133,6 +163,19 @@ export async function GET(request: NextRequest) {
     }
 
     try {
+      // リクエストトラッカーを使用
+      const requestId = await requestTracker.trackRequest(providerType);
+
+      // ユーザー情報を含むログ
+      providerLogger.info(providerType, 'リクエスト処理開始', { 
+        user: {
+          role: 'user'
+        },
+        context: { 
+          requestId 
+        }
+      });
+
       // 送信ボタン押下時に送信済フラグをFALSE（送信可）に設定
       sentFlags.set(providerType, false);
       
@@ -151,20 +194,37 @@ export async function GET(request: NextRequest) {
 
       const stream = await provider.streamChat(prompt);
 
-      const response = new Response(stream, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache, no-transform',
-          'Connection': 'keep-alive',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
-          'X-Accel-Buffering': 'no'
+      // 成功ログ（システム側の応答）
+      providerLogger.info(providerType, 'リクエスト処理成功', { 
+        user: {
+          role: 'system'
         },
+        context: { 
+          requestId, 
+          streamSize: stream.length 
+        }
       });
 
-      return response;
+      // ストリーミングレスポンスを手動で作成
+      return new Response(stream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive'
+        }
+      });
+
     } catch (error) {
+      // エラーログ
+      providerLogger.error(providerType, 'リクエスト処理失敗', { 
+        user: {
+          role: 'system'
+        },
+        context: { 
+          error: error instanceof Error ? error.message : String(error)
+        }
+      });
+
       console.error('Error in chat endpoint:', error);
       throw error;
     } finally {
@@ -183,10 +243,121 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    if (error instanceof RequestTrackerError) {
+      return new Response(
+        JSON.stringify({ error: error.message }),
+        { 
+          status: 429, // Too Many Requests
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
     return new Response(
       JSON.stringify({ error: 'サーバーエラーが発生しました' }),
       { 
         status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  const { messages, provider, model, user } = await request.json();
+
+  try {
+    // リクエストトラッカーを使用
+    const requestId = await requestTracker.trackRequest(provider);
+
+    // ユーザー情報を含むログ
+    providerLogger.info(provider, 'リクエスト処理開始', { 
+      user: {
+        id: user?.id,
+        name: user?.name,
+        role: 'user'
+      },
+      context: { 
+        requestId, 
+        model 
+      }
+    });
+
+    // プロバイダの取得
+    const providerInstance = ProviderFactory.getProvider(provider);
+
+    // レートリミッターの確認
+    const apiRateLimit = (config.api as ApiConfig)[provider]?.rateLimit;
+    if (apiRateLimit) {
+      const rateLimiter = new RateLimiter(apiRateLimit);
+      await rateLimiter.limit(provider);
+    }
+
+    // 通常のプロバイダ処理
+    const stream = await providerInstance.stream(messages, model);
+
+    // 成功ログ（システム側の応答）
+    providerLogger.info(provider, 'リクエスト処理成功', { 
+      user: {
+        role: 'system'
+      },
+      context: { 
+        requestId
+      }
+    });
+
+    // ストリーミングレスポンスを手動で作成
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive'
+      }
+    });
+
+  } catch (error: unknown) {
+    // エラーの型を安全に処理
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : typeof error === 'string' 
+        ? error 
+        : 'Unknown error';
+
+    // エラーログ
+    providerLogger.error(provider, 'リクエスト処理失敗', { 
+      user: {
+        role: 'system'
+      },
+      context: { 
+        error: errorMessage
+      }
+    });
+
+    // エラーハンドリング
+    if (error instanceof RequestTrackerError) {
+      return new Response(
+        JSON.stringify({ error: error.message }),
+        { 
+          status: 429, // Too Many Requests
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    if (error instanceof ProviderError) {
+      return new Response(
+        JSON.stringify({ error: error.message }),
+        { 
+          status: 500, 
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({ error: 'サーバーエラーが発生しました' }),
+      { 
+        status: 500, 
         headers: { 'Content-Type': 'application/json' }
       }
     );
