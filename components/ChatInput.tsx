@@ -1,72 +1,59 @@
-import React, { useState, useContext } from 'react';
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { ChatContext } from '@/app/lib/context/ChatContext';
+import React, { useState } from 'react';
+import { chatFetch } from '@/lib/apiClient';
 
-export function ChatInput() {
-  const [input, setInput] = useState('');
-  const { sendMessageToCharacters } = useContext(ChatContext);
+interface ChatInputProps {
+  onMessageSend?: (message: string) => void;
+}
 
-  async function generateResponse(prompt: string) {
+const ChatInput: React.FC<ChatInputProps> = ({ onMessageSend }) => {
+  const [message, setMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSend = async () => {
+    if (!message.trim() || isLoading) return;
+
+    setIsLoading(true);
+    setError(null);
+
     try {
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt })
-      });
-
-      if (!response.ok) {
-        throw new Error('APIレスポンスエラー');
-      }
-
-      const data = await response.json();
+      const response = await chatFetch(message);
       
+      // 成功時のコールバック
+      onMessageSend?.(response.response);
+      
+      // メッセージをクリア
+      setMessage('');
+    } catch (err: any) {
       // エラーハンドリング
-      if (data.error) {
-        console.error('API呼び出しエラー:', data.error);
-        return null;
+      if (err.status === 409) {
+        setError('現在処理中です。少し待ってから再試行してください。');
+      } else {
+        setError('メッセージの送信中にエラーが発生しました。');
       }
-
-      return data.message;
-    } catch (error) {
-      console.error('レスポンス生成中にエラーが発生:', error);
-      return null;
-    }
-  }
-
-  const handleSubmit = async () => {
-    if (input.trim() === '') return;
-
-    try {
-      // オーナーの入力を全キャラクターに送信
-      const response = await generateResponse(input);
-      if (response) {
-        await sendMessageToCharacters(response);
-      }
-      
-      // 入力欄をクリア
-      setInput('');
-    } catch (error) {
-      console.error('メッセージ送信中にエラーが発生しました:', error);
+      console.error('チャット送信エラー:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col space-y-2">
-      <Textarea
-        placeholder="メッセージを入力してください..."
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        className="w-full min-h-[100px]"
+    <div className="chat-input-container">
+      <textarea
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        placeholder="メッセージを入力..."
+        disabled={isLoading}
       />
-      <Button 
-        onClick={handleSubmit}
-        className="self-end"
+      <button 
+        onClick={handleSend} 
+        disabled={isLoading || !message.trim()}
       >
-        送信
-      </Button>
+        {isLoading ? '送信中...' : '送信'}
+      </button>
+      {error && <div className="error-message">{error}</div>}
     </div>
   );
-}
+};
+
+export default ChatInput;
