@@ -133,4 +133,20 @@ export function getSystemConfigPath(): string {
   return config.app.paths.systemConfig;
 }
 
+export const getConfig = () => ({
+  chatSpeed: process.env.NEXT_PUBLIC_CHAT_SPEED ? parseInt(process.env.NEXT_PUBLIC_CHAT_SPEED, 10) : 5,
+  debugMode: process.env.NEXT_PUBLIC_DEBUG_MODE === 'true',
+  ollama: {
+    host: process.env.NEXT_PUBLIC_OLLAMA_HOST || 'http://localhost:11434',
+    model: process.env.NEXT_PUBLIC_OLLAMA_MODEL || '',
+    baseUrl: process.env.NEXT_PUBLIC_OLLAMA_BASE_URL || process.env.NEXT_PUBLIC_OLLAMA_HOST
+  },
+  apiKeys: {
+    anthropic: process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY || '',
+    gemini: process.env.NEXT_PUBLIC_GEMINI_API_KEY || ''
+  }
+});
+
+export type AppConfig = ReturnType<typeof getConfig>;
+
 export default config;

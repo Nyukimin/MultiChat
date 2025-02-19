@@ -1,21 +1,15 @@
 export enum ErrorCode {
-  VALIDATION_ERROR = 'VALIDATION_ERROR',
-  API_ERROR = 'API_ERROR',
-  STREAM_ERROR = 'STREAM_ERROR',
-  CONFIGURATION_ERROR = 'CONFIGURATION_ERROR',
-  PARSING_ERROR = 'PARSING_ERROR',
-  RATE_LIMIT_ERROR = 'RATE_LIMIT_ERROR',
-  INITIALIZATION_ERROR = 'INITIALIZATION_ERROR'
+  RateLimit = 'RATE_LIMIT',
+  InvalidRequest = 'INVALID_REQUEST',
+  ServerError = 'SERVER_ERROR'
 }
 
 export class ProviderError extends Error {
   constructor(
-    public readonly code: ErrorCode,
     message: string,
-    public readonly provider: string,
-    public readonly cause?: Error
+    public code: ErrorCode
   ) {
-    super(`[${provider}] ${code}: ${message}`);
+    super(message);
     this.name = 'ProviderError';
   }
 
@@ -25,13 +19,13 @@ export class ProviderError extends Error {
     }
 
     // エラーの種類に応じて適切なエラーコードを設定
-    let code = ErrorCode.API_ERROR;
-    if (error.message.includes('API key')) {
-      code = ErrorCode.INITIALIZATION_ERROR;
-    } else if (error.message.includes('rate limit')) {
-      code = ErrorCode.RATE_LIMIT_ERROR;
+    let code = ErrorCode.ServerError;
+    if (error.message.includes('rate limit')) {
+      code = ErrorCode.RateLimit;
+    } else if (error.message.includes('API key')) {
+      code = ErrorCode.InvalidRequest;
     }
 
-    return new ProviderError(code, error.message, provider, error);
+    return new ProviderError(error.message, code);
   }
 }
