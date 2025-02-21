@@ -47,12 +47,12 @@ interface Character {
 
 ### 3.1 パーサー実装
 ```typescript
-// 各プロバイダはこのインターフェースを実装
-class ProviderParser implements ResponseParser {
+// Geminiパーサー
+class GeminiParser implements ResponseParser {
   parse(chunk: string): string {
     try {
-      // プロバイダ固有のパース処理
-      return /* パース結果 */;
+      const data = JSON.parse(chunk);
+      return data.text || '';  // { text: "応答テキスト" }
     } catch (error) {
       return this.handleError(error, chunk);
     }
@@ -61,6 +61,54 @@ class ProviderParser implements ResponseParser {
   handleError(error: Error, chunk: string): string {
     console.error(`${this.constructor.name}：パースエラー:`, error);
     return '';  // エラー時は空文字を返す
+  }
+}
+
+// Anthropicパーサー
+class AnthropicParser implements ResponseParser {
+  parse(chunk: string): string {
+    try {
+      const data = JSON.parse(chunk);
+      return data.completion || '';  // { completion: "応答テキスト" }
+    } catch (error) {
+      return this.handleError(error, chunk);
+    }
+  }
+
+  handleError(error: Error, chunk: string): string {
+    console.error(`${this.constructor.name}：パースエラー:`, error);
+    return '';  // エラー時は空文字を返す
+  }
+}
+
+// Ollamaパーサー
+class OllamaParser implements ResponseParser {
+  parse(chunk: string): string {
+    try {
+      const data = JSON.parse(chunk);
+      return data.response || '';  // { response: "応答テキスト" }
+    } catch (error) {
+      return this.handleError(error, chunk);
+    }
+  }
+
+  handleError(error: Error, chunk: string): string {
+    console.error(`${this.constructor.name}：パースエラー:`, error);
+    return '';  // エラー時は空文字を返す
+  }
+}
+
+// パーサーの取得
+function getParser(provider: string): ResponseParser {
+  switch (provider) {
+    case 'gemini':
+      return new GeminiParser();
+    case 'anthropic':
+      return new AnthropicParser();
+    case 'ollama':
+      return new OllamaParser();
+    default:
+      throw new Error(`未対応のプロバイダ: ${provider}`);
   }
 }
 ```
