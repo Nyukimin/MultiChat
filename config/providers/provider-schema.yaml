@@ -34,6 +34,18 @@ properties:
       maxTokens:
         type: integer
         minimum: 1
+      streaming:
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          mode:
+            type: string
+            enum: [raw, buffered]
+            default: raw
+            description: "raw: 即時描画, buffered: 完全なJSONを構築"
+        required: [enabled, mode]
     additionalProperties: true
   rateLimit:
     type: object

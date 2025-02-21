@@ -20,21 +20,24 @@ export class APIClient {
     APIClient.instance = this;
   }
 
-  public async generate(prompt: string, llmType: 'anthropic' | 'gemini' | 'ollama'): Promise<ApiResponse> {
+  public async *generate(prompt: string, llmType: 'anthropic' | 'gemini' | 'ollama'): AsyncGenerator<string> {
     switch(llmType) {
       case 'ollama':
-        return this.generateOllama(prompt);
+        yield* this.generateOllamaStream(prompt);
+        break;
       case 'anthropic':
-        return this.generateAnthropic(prompt);
+        yield* this.generateAnthropicStream(prompt);
+        break;
       case 'gemini':
-        return this.generateGemini(prompt);
+        yield* this.generateGeminiStream(prompt);
+        break;
       default:
         throw new Error('サポートされていないLLMタイプです');
     }
   }
 
-  private async generateOllama(prompt: string): Promise<ApiResponse> {
-    if (!this.config.ollama.baseUrl) {
+  private async *generateOllamaStream(prompt: string): AsyncGenerator<string> {
+    if (!this.config?.ollama?.baseUrl) {
       throw new Error('Ollama base URL is not configured');
     }
 
@@ -44,26 +47,49 @@ export class APIClient {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: this.config.ollama.model || 'hf.co/mradermacher/phi-4-deepseek-R1K-RL-EZO-GGUF:Q4_K_S',
+        model: this.config.ollama?.model || 'phi',
         prompt: prompt,
-        stream: false
+        stream: true
       })
     });
 
     if (!response.ok) {
-      throw new Error(`Ollama API Error: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Ollama API Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText
+      });
+      throw new Error(`Ollama API Error: ${response.status} ${response.statusText}\n${errorText}`);
     }
 
-    const data = await response.json();
-    return {
-      content: data.response,
-      model: data.model,
-      provider: 'ollama'
-    };
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+
+    if (!reader) {
+      throw new Error('ストリームリーダーの取得に失敗しました');
+    }
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n');
+
+      for (const line of lines) {
+        if (line.trim()) {
+          const match = line.match(/"response":"([^"]+)"/);
+          if (match && match[1]) {
+            yield match[1];
+          }
+        }
+      }
+    }
   }
 
-  private async generateAnthropic(prompt: string): Promise<ApiResponse> {
-    if (!this.config.apiKeys.anthropic) {
+  private async *generateAnthropicStream(prompt: string): AsyncGenerator<string> {
+    if (!this.config?.apiKeys?.anthropic) {
       throw new Error('Anthropic API key is not configured');
     }
 
@@ -71,55 +97,102 @@ export class APIClient {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': this.config.apiKeys.anthropic,
-        'anthropic-version': '2023-06-01'
+        'X-API-Key': this.config.apiKeys.anthropic,
+        'Anthropic-Version': '2023-06-01'
       },
       body: JSON.stringify({
         model: 'claude-3-sonnet-20240229',
         max_tokens: 1024,
-        messages: [{ role: 'user', content: prompt }]
+        messages: [{ role: 'user', content: prompt }],
+        stream: true
       })
     });
 
     if (!response.ok) {
-      throw new Error(`Anthropic API Error: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Anthropic API Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText
+      });
+      throw new Error(`Anthropic API Error: ${response.status} ${response.statusText}\n${errorText}`);
     }
 
-    const data = await response.json();
-    return {
-      content: data.content[0].text,
-      model: data.model,
-      provider: 'anthropic'
-    };
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+
+    if (!reader) {
+      throw new Error('ストリームリーダーの取得に失敗しました');
+    }
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n');
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const text = line.slice(6);
+          if (text && text !== '[DONE]') {
+            yield text;
+          }
+        }
+      }
+    }
   }
 
-  private async generateGemini(prompt: string): Promise<ApiResponse> {
-    if (!this.config.apiKeys.gemini) {
+  private async *generateGeminiStream(prompt: string): AsyncGenerator<string> {
+    if (!this.config?.apiKeys?.gemini) {
       throw new Error('Gemini API key is not configured');
     }
 
+    console.log('Gemini：送信：' + prompt);
+
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.config.apiKeys.gemini}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:streamGenerateContent?key=${this.config.apiKeys.gemini}`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }]
+          contents: [{
+            parts: [{ text: prompt }]
+          }]
         })
       }
     );
 
     if (!response.ok) {
-      throw new Error(`Gemini API Error: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Gemini API Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText
+      });
+      throw new Error(`Gemini API Error: ${response.status} ${response.statusText}\n${errorText}`);
     }
 
-    const data = await response.json();
-    return {
-      content: data.candidates[0].content.parts[0].text,
-      model: 'gemini-pro',
-      provider: 'gemini'
-    };
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+
+    if (!reader) {
+      throw new Error('ストリームリーダーの取得に失敗しました');
+    }
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      
+      // 終了マーカー "]" は無視
+      if (chunk.trim() === ']') continue;
+      
+      console.log('Gemini：受信：' + chunk);
+      yield chunk;
+    }
   }
 }

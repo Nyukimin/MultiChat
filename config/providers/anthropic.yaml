@@ -6,7 +6,10 @@ parameters:
   apiKeyEnv: "NEXT_PUBLIC_ANTHROPIC_API_KEY"
   model: "claude-3-opus-20240229"
   temperature: 0.7
-  maxTokens: 4096
+  maxTokens: 2048
+  streaming:
+    enabled: true
+    mode: raw  # raw: 即時描画, buffered: 完全なJSONを構築
 rateLimit:
-  requestsPerMinute: 15
-  maxConcurrent: 3
+  requestsPerMinute: 60
+  maxConcurrent: 5

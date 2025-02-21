@@ -7,6 +7,9 @@ parameters:
   model: "gemini-1.5-pro-latest"
   temperature: 0.7
   maxTokens: 2048
+  streaming:
+    enabled: true
+    mode: raw  # raw: 即時描画, buffered: 完全なJSONを構築
 rateLimit:
   requestsPerMinute: 60
   maxConcurrent: 5

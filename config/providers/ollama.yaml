@@ -1,12 +1,15 @@
 name: "ollama"
 type: "local"
 baseUrl: "http://localhost:11434"
-authType: "none"
+authType: "api_key"
 parameters:
   baseUrlEnv: "NEXT_PUBLIC_OLLAMA_BASE_URL"
-  model: "phi-4-deepseek"
+  model: "phi-4-deepseek-R1K-RL-EZO-GGUF:Q4_K_S"
   temperature: 0.7
   maxTokens: 2048
+  streaming:
+    enabled: true
+    mode: raw  # raw: 即時描画, buffered: 完全なJSONを構築
 rateLimit:
-  requestsPerMinute: 30
-  maxConcurrent: 2
+  requestsPerMinute: 60
+  maxConcurrent: 5

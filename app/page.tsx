@@ -63,12 +63,16 @@ export default function Home() {
 
     setIsLoading(true);
     setError(null);
+    setQuestion(currentQuestion); // 質問をstateに保存
 
     console.log('[Client] Submitting question:', {
       question: currentQuestion,
       selectedCharacters: selectedCharacters,
       timestamp: new Date().toISOString()
     });
+
+    // 新しい質問が来たら、以前の応答をクリア
+    setCharacterResponses([]);
 
     // 選択されたキャラクターごとにストリーミングを開始
     selectedCharacters.forEach(characterId => {
@@ -124,7 +128,7 @@ export default function Home() {
 
         eventSource.onmessage = (event) => {
           try {
-            console.log('[フロントエンド] 受信データ:', event.data);
+            console.log(`${character.llm}：受信：${event.data}`);
 
             if (event.data === '[DONE]') {
               console.log('[フロントエンド] 完了シグナル受信');
@@ -133,43 +137,108 @@ export default function Home() {
               return;
             }
 
-            const data = JSON.parse(event.data);
-            console.log('[フロントエンド] パース済みデータ:', data);
-            
-            // エラーメッセージの処理
-            if (data.error) {
-              console.error('[フロントエンド] エラー受信:', data.error);
-              setError(`エラーが発生しました: ${data.error.message || 'Unknown error'}`);
-              eventSource.close();
-              setIsLoading(false);
-              return;
+            // LLMごとのパース処理
+            let text = '';
+            switch (character.llm) {
+              case 'gemini':
+                const parseGeminiChunk = (data: string) => {
+                  try {
+                    const jsonStr = `[${data.replace(/\n/g, ',').replace(/,\s*$/, '')}]`;
+                    const responses = JSON.parse(jsonStr);
+                    return responses
+                      .map((res: any) => res?.candidates?.[0]?.content?.parts?.[0]?.text || '')
+                      .join('');
+                  } catch (error) {
+                    console.error('Geminiパースエラー:', error);
+                    return '';
+                  }
+                };
+
+                let geminiBuffer = '';
+                geminiBuffer += event.data;
+                console.log(`Gemini：生データ受信 -> ${event.data}`);
+
+                try {
+                  const text = parseGeminiChunk(geminiBuffer);
+                  if (text) {
+                    console.log(`Gemini：解析成功 -> ${text}`);
+                    setCharacterResponses(prev => {
+                      const newResponses = [...prev];
+                      const responseIndex = newResponses.findIndex(r => r.characterId === character.id);
+                      
+                      if (responseIndex !== -1) {
+                        console.log('[フロントエンド] 既存の応答を更新:', character.id);
+                        newResponses[responseIndex] = {
+                          ...newResponses[responseIndex],
+                          message: (newResponses[responseIndex].message || '') + text,
+                          responseTimestamp: new Date()
+                        };
+                      } else {
+                        console.log('[フロントエンド] 新しい応答を追加:', character.id);
+                        newResponses.push({
+                          characterId: character.id,
+                          message: text,
+                          llmName: character.llm,
+                          questionTimestamp: new Date(),
+                          responseTimestamp: new Date()
+                        });
+                      }
+                      return newResponses;
+                    });
+                    geminiBuffer = '';
+                  }
+                } catch (e) {
+                  console.log('Gemini：部分データ待機中...');
+                }
+                break;
+              case 'ollama':
+                try {
+                  console.log('[フロントエンド] Ollama パース前:', event.data);
+                  const data = JSON.parse(event.data);
+                  console.log('[フロントエンド] Ollama パース結果:', data);
+                  text = data.response;
+                } catch (e) {
+                  console.warn('[フロントエンド] Ollamaのパースエラー:', e);
+                  text = event.data;
+                }
+                break;
+              case 'anthropic':
+                text = event.data;
+                break;
+              default:
+                console.warn('[フロントエンド] 未知のLLMタイプ:', character.llm);
+                text = event.data;
             }
 
-            if (data.text) {
-              console.log('[フロントエンド] テキスト受信:', data.text);
-              setCharacterResponses(prev => {
-                const newResponses = [...prev];
-                const responseIndex = newResponses.findIndex(r => r.characterId === character.id);
-                
-                if (responseIndex !== -1) {
-                  newResponses[responseIndex] = {
-                    ...newResponses[responseIndex],
-                    message: (newResponses[responseIndex].message || '') + data.text,
-                    responseTimestamp: new Date()
-                  };
-                } else {
-                  newResponses.push({
-                    characterId: character.id,
-                    message: data.text,
-                    llmName: character.llm,
-                    questionTimestamp: new Date(),
-                    responseTimestamp: new Date()
-                  });
-                }
-                return newResponses;
-              });
-            }
+            console.log(`${character.llm}：パース後：${text}`);
+
+            // 共通の表示処理
+            setCharacterResponses(prev => {
+              const newResponses = [...prev];
+              const responseIndex = newResponses.findIndex(r => r.characterId === character.id);
+              
+              if (responseIndex !== -1) {
+                console.log('[フロントエンド] 既存の応答を更新:', character.id);
+                newResponses[responseIndex] = {
+                  ...newResponses[responseIndex],
+                  message: (newResponses[responseIndex].message || '') + text,
+                  responseTimestamp: new Date()
+                };
+              } else {
+                console.log('[フロントエンド] 新しい応答を追加:', character.id);
+                newResponses.push({
+                  characterId: character.id,
+                  message: text,
+                  llmName: character.llm,
+                  questionTimestamp: new Date(),
+                  responseTimestamp: new Date()
+                });
+              }
+              return newResponses;
+            });
+
           } catch (error) {
+            console.error('[フロントエンド] エラー:', error);
             setError(`メッセージの処理中にエラーが発生しました: ${error.message}`);
             eventSource.close();
             setIsLoading(false);
@@ -183,7 +252,6 @@ export default function Home() {
     });
 
     setOwnerInput('');
-    setQuestion(currentQuestion);
   };
 
   // デバッグモードの確認
