@@ -163,8 +163,26 @@ function getCharacterResponse(
 - エラー時は空文字列を返却
 
 ### 4.2 ログ出力
-- 形式: `LLM名：受信：${生データ}`
-- エラー時: `LLM名：エラー：${エラー内容}`
+- 形式:
+  1. 送信時: `LLM名：送信：${メッセージ}`
+  2. 受信時（生データ）: `LLM名：受信：${生データ}`
+  3. 受信時（パース後）: `LLM名：受信：${テキストのみ}(${token/sec} token/sec)`
+  4. エラー時: `LLM名：エラー：${エラー内容}`
+
+例：
+```
+Gemini：送信：こんにちは
+Gemini：受信：{"candidates":[{"content":{"parts":[{"text":"こんにちは！"}]}}]}
+Gemini：受信：こんにちは！(10.5 token/sec)
+```
+
+- トークン速度の計算:
+  ```typescript
+  const elapsedSeconds = (Date.now() - startTime) / 1000;
+  const tokensPerSecond = totalTokens / elapsedSeconds;
+  // 小数点1位まで表示
+  const formattedSpeed = tokensPerSecond.toFixed(1);
+  ```
 
 ### 4.3 エラー処理
 - パースエラーは処理を継続
