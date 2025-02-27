@@ -1,0 +1,211 @@
+[2025-02-27T12:07:42.912Z] [INFO] ServerLogger initialized: 2025-02-27T12:07:42.912Z
+[2025-02-27T12:07:42.912Z] [INFO] Log file path: E:\GenerativeAI\LLM\AIChat\ai-multi-chat\app_06\MultiChat\logs\server_2025_0227_210742.txt
+[2025-02-27T12:07:42.920Z] [INFO] 🌐 API Route: チャットリクエスト受信 [REQ-034696]
+[2025-02-27T12:07:42.920Z] [INFO] 📨 受信パラメータ - プロンプト: こんにちは, LLM: gemini [REQ-034696]
+[2025-02-27T12:07:42.920Z] [INFO] 🔍 LLMタイプ: gemini [REQ-034696]
+[2025-02-27T12:07:42.921Z] [INFO] 🚀 ストリーム生成: [REQ-034696]
+[2025-02-27T12:07:42.921Z] [INFO] APIClient: 生成開始 - LLM: gemini, リクエストID: REQ-034696
+[2025-02-27T12:07:42.922Z] [API_REQUEST] [REQ-034696] gemini：送信：こんにちは
+[2025-02-27T12:07:42.927Z] [INFO] [REQ-034696] Gemini API リクエスト開始
+[2025-02-27T12:07:42.935Z] [INFO] 🌐 API Route: チャットリクエスト受信 [REQ-829287]
+[2025-02-27T12:07:42.936Z] [INFO] 📨 受信パラメータ - プロンプト: こんにちは, LLM: gemini [REQ-829287]
+[2025-02-27T12:07:42.936Z] [INFO] 🔍 LLMタイプ: gemini [REQ-829287]
+[2025-02-27T12:07:42.936Z] [INFO] 🚀 ストリーム生成: [REQ-829287]
+[2025-02-27T12:07:42.937Z] [ERROR] ストリーム生成中にエラーが発生しました: ${error} [${requestId}]
+[2025-02-27T12:07:43.091Z] [INFO] 🌐 API Route: チャットリクエスト受信 [REQ-388054]
+[2025-02-27T12:07:43.092Z] [INFO] 📨 受信パラメータ - プロンプト: おはようございます, LLM: gemini [REQ-388054]
+[2025-02-27T12:07:43.092Z] [INFO] 🔍 LLMタイプ: gemini [REQ-388054]
+[2025-02-27T12:07:43.092Z] [INFO] 🚀 ストリーム生成: [REQ-388054]
+[2025-02-27T12:07:43.092Z] [ERROR] ストリーム生成中にエラーが発生しました: ${error} [${requestId}]
+[2025-02-27T12:07:43.199Z] [INFO] 🌐 API Route: チャットリクエスト受信 [REQ-836436]
+[2025-02-27T12:07:43.200Z] [INFO] 📨 受信パラメータ - プロンプト: こんにちは, LLM: gemini [REQ-836436]
+[2025-02-27T12:07:43.200Z] [INFO] 🔍 LLMタイプ: gemini [REQ-836436]
+[2025-02-27T12:07:43.200Z] [INFO] 🚀 ストリーム生成: [REQ-836436]
+[2025-02-27T12:07:43.201Z] [ERROR] ストリーム生成中にエラーが発生しました: ${error} [${requestId}]
+[2025-02-27T12:07:43.985Z] [INFO] [REQ-034696] Gemini API ストリーム受信開始
+[2025-02-27T12:07:43.986Z] [API_RESPONSE] [REQ-034696] gemini：受信：こんにちは
+[2025-02-27T12:07:43.994Z] [API_RESPONSE] [REQ-034696] gemini：受信：！
+[2025-02-27T12:07:44.222Z] [API_RESPONSE] [REQ-034696] gemini：受信：
+
+������������伝いできることはありますか？
+
+[2025-02-27T12:07:44.232Z] [WARN] [REQ-034696] Gemini 最終バッファのパースに失敗: SyntaxError: Unexpected token ']', "
+]" is not valid JSON
+[2025-02-27T12:07:44.233Z] [INFO] [REQ-034696] Gemini API ストリーム処理完了
+[2025-02-27T12:07:44.233Z] [INFO] APIClient: 生成完了 - リクエストID: REQ-034696
+[2025-02-27T12:07:44.233Z] [INFO] Stream completed successfully [${requestId}]
+[2025-02-27T12:07:45.994Z] [INFO] 🌐 API Route: チャットリクエスト受信 [REQ-817510]
+[2025-02-27T12:07:45.995Z] [INFO] 📨 受信パラメータ - プロンプト: こんにちは, LLM: gemini [REQ-817510]
+[2025-02-27T12:07:45.995Z] [INFO] 🔍 LLMタイプ: gemini [REQ-817510]
+[2025-02-27T12:07:45.995Z] [INFO] 🚀 ストリーム生成: [REQ-817510]
+[2025-02-27T12:07:45.995Z] [INFO] APIClient: 生成開始 - LLM: gemini, リクエストID: REQ-817510
+[2025-02-27T12:07:45.995Z] [API_REQUEST] [REQ-817510] gemini：送信：こんにちは
+[2025-02-27T12:07:45.996Z] [INFO] [REQ-817510] Gemini API リクエスト開始
+[2025-02-27T12:07:46.129Z] [INFO] 🌐 API Route: チャットリクエスト受信 [REQ-502360]
+[2025-02-27T12:07:46.129Z] [INFO] 📨 受信パラメータ - プロンプト: おはようございます, LLM: gemini [REQ-502360]
+[2025-02-27T12:07:46.130Z] [INFO] 🔍 LLMタイプ: gemini [REQ-502360]
+[2025-02-27T12:07:46.130Z] [INFO] 🚀 ストリーム生成: [REQ-502360]
+[2025-02-27T12:07:46.130Z] [ERROR] ストリーム生成中にエラーが発生しました: ${error} [${requestId}]
+[2025-02-27T12:07:46.272Z] [INFO] 🌐 API Route: チャットリクエスト受信 [REQ-957572]
+[2025-02-27T12:07:46.272Z] [INFO] 📨 受信パラメータ - プロンプト: おはようございます, LLM: gemini [REQ-957572]
+[2025-02-27T12:07:46.273Z] [INFO] 🔍 LLMタイプ: gemini [REQ-957572]
+[2025-02-27T12:07:46.273Z] [INFO] 🚀 ストリーム生成: [REQ-957572]
+[2025-02-27T12:07:46.273Z] [ERROR] ストリーム生成中にエラーが発生しました: ${error} [${requestId}]
+[2025-02-27T12:07:46.383Z] [INFO] 🌐 API Route: チャットリクエスト受信 [REQ-868337]
+[2025-02-27T12:07:46.383Z] [INFO] 📨 受信パラメータ - プロンプト: こんにちは, LLM: gemini [REQ-868337]
+[2025-02-27T12:07:46.383Z] [INFO] 🔍 LLMタイプ: gemini [REQ-868337]
+[2025-02-27T12:07:46.383Z] [INFO] 🚀 ストリーム生成: [REQ-868337]
+[2025-02-27T12:07:46.384Z] [ERROR] ストリーム生成中にエラーが発生しました: ${error} [${requestId}]
+[2025-02-27T12:07:46.633Z] [INFO] [REQ-817510] Gemini API ストリーム受信開始
+[2025-02-27T12:07:46.634Z] [API_RESPONSE] [REQ-817510] gemini：受信：こんにちは
+[2025-02-27T12:07:46.640Z] [API_RESPONSE] [REQ-817510] gemini：受信：���
+[2025-02-27T12:07:46.859Z] [API_RESPONSE] [REQ-817510] gemini：受信：
+
+何かご用でしょうか？😊
+
+[2025-02-27T12:07:46.868Z] [WARN] [REQ-817510] Gemini 最終バッファのパースに失敗: SyntaxError: Unexpected token ']', "
+]" is not valid JSON
+[2025-02-27T12:07:46.868Z] [INFO] [REQ-817510] Gemini API ストリーム処理完了
+[2025-02-27T12:07:46.869Z] [INFO] APIClient: 生成完了 - リクエストID: REQ-817510
+[2025-02-27T12:07:46.869Z] [INFO] Stream completed successfully [${requestId}]
+[2025-02-27T12:07:47.289Z] [INFO] 🌐 API Route: チャットリクエスト受信 [REQ-814863]
+[2025-02-27T12:07:47.289Z] [INFO] 📨 受信パラメータ - プロンプト: こんにちは, LLM: gemini [REQ-814863]
+[2025-02-27T12:07:47.289Z] [INFO] 🔍 LLMタイプ: gemini [REQ-814863]
+[2025-02-27T12:07:47.290Z] [INFO] 🚀 ストリーム生成: [REQ-814863]
+[2025-02-27T12:07:47.290Z] [INFO] APIClient: 生成開始 - LLM: gemini, リクエストID: REQ-814863
+[2025-02-27T12:07:47.290Z] [API_REQUEST] [REQ-814863] gemini：送信：こんにちは
+[2025-02-27T12:07:47.290Z] [INFO] [REQ-814863] Gemini API リクエスト開始
+[2025-02-27T12:07:47.866Z] [INFO] [REQ-814863] Gemini API ストリーム受信開始
+[2025-02-27T12:07:47.868Z] [API_RESPONSE] [REQ-814863] gemini：受信：こんにちは
+[2025-02-27T12:07:48.133Z] [API_RESPONSE] [REQ-814863] gemini：受信：���
+
+���かお手伝いできることはありますか？
+
+[2025-02-27T12:07:48.142Z] [WARN] [REQ-814863] Gemini 最終バッファのパースに失敗: SyntaxError: Unexpected token ']', "
+]" is not valid JSON
+[2025-02-27T12:07:48.142Z] [INFO] [REQ-814863] Gemini API ストリーム処理完了
+[2025-02-27T12:07:48.142Z] [INFO] APIClient: 生成完了 - リクエストID: REQ-814863
+[2025-02-27T12:07:48.143Z] [INFO] Stream completed successfully [${requestId}]
+[2025-02-27T12:07:49.327Z] [INFO] 🌐 API Route: チャットリクエスト受信 [REQ-316380]
+[2025-02-27T12:07:49.328Z] [INFO] 📨 受信パラメータ - プロンプト: おはようございます, LLM: gemini [REQ-316380]
+[2025-02-27T12:07:49.328Z] [INFO] 🔍 LLMタイプ: gemini [REQ-316380]
+[2025-02-27T12:07:49.328Z] [INFO] 🚀 ストリーム生成: [REQ-316380]
+[2025-02-27T12:07:49.328Z] [INFO] APIClient: 生成開始 - LLM: gemini, リクエストID: REQ-316380
+[2025-02-27T12:07:49.328Z] [API_REQUEST] [REQ-316380] gemini：送信：おはようございます
+[2025-02-27T12:07:49.329Z] [INFO] [REQ-316380] Gemini API リクエスト開始
+[2025-02-27T12:07:49.425Z] [INFO] 🌐 API Route: チャットリクエスト受信 [REQ-829922]
+[2025-02-27T12:07:49.425Z] [INFO] 📨 受信パラメータ - プロンプト: こんにちは, LLM: gemini [REQ-829922]
+[2025-02-27T12:07:49.425Z] [INFO] 🔍 LLMタイプ: gemini [REQ-829922]
+[2025-02-27T12:07:49.425Z] [INFO] 🚀 ストリーム生成: [REQ-829922]
+[2025-02-27T12:07:49.426Z] [ERROR] ストリーム生成中にエラーが発生しました: ${error} [${requestId}]
+[2025-02-27T12:07:49.920Z] [INFO] 🌐 API Route: チャットリクエスト受信 [REQ-006521]
+[2025-02-27T12:07:49.920Z] [INFO] 📨 受信パラメータ - プロンプト: こんにちは, LLM: gemini [REQ-006521]
+[2025-02-27T12:07:49.920Z] [INFO] 🔍 LLMタイプ: gemini [REQ-006521]
+[2025-02-27T12:07:49.921Z] [INFO] 🚀 ストリーム生成: [REQ-006521]
+[2025-02-27T12:07:49.921Z] [ERROR] ストリーム生成中にエラーが発生しました: ${error} [${requestId}]
+[2025-02-27T12:07:50.024Z] [INFO] [REQ-316380] Gemini API ストリーム受信開始
+[2025-02-27T12:07:50.024Z] [API_RESPONSE] [REQ-316380] gemini：受信：おはようございます
+[2025-02-27T12:07:50.211Z] [API_RESPONSE] [REQ-316380] gemini：受信：！
+
+何かお手伝いできることはありますか？
+
+[2025-02-27T12:07:50.219Z] [WARN] [REQ-316380] Gemini 最終バッファのパースに失敗: SyntaxError: Unexpected token ']', "
+]" is not valid JSON
+[2025-02-27T12:07:50.219Z] [INFO] [REQ-316380] Gemini API ストリーム処理完了
+[2025-02-27T12:07:50.219Z] [INFO] APIClient: 生成完了 - リクエストID: REQ-316380
+[2025-02-27T12:07:50.220Z] [INFO] Stream completed successfully [${requestId}]
+[2025-02-27T12:07:51.197Z] [INFO] 🌐 API Route: チャットリクエスト受信 [REQ-012766]
+[2025-02-27T12:07:51.197Z] [INFO] 📨 受信パラメータ - プロンプト: こんにちは, LLM: gemini [REQ-012766]
+[2025-02-27T12:07:51.197Z] [INFO] 🔍 LLMタイプ: gemini [REQ-012766]
+[2025-02-27T12:07:51.198Z] [INFO] 🚀 ストリーム生成: [REQ-012766]
+[2025-02-27T12:07:51.198Z] [INFO] APIClient: 生成開始 - LLM: gemini, リクエストID: REQ-012766
+[2025-02-27T12:07:51.198Z] [API_REQUEST] [REQ-012766] gemini：送信：こんにちは
+[2025-02-27T12:07:51.198Z] [INFO] [REQ-012766] Gemini API リクエスト開始
+[2025-02-27T12:07:51.810Z] [INFO] [REQ-012766] Gemini API ストリーム受信開始
+[2025-02-27T12:07:51.811Z] [API_RESPONSE] [REQ-012766] gemini：受信：こんにちは
+[2025-02-27T12:07:51.815Z] [API_RESPONSE] [REQ-012766] gemini：受信：！
+[2025-02-27T12:07:51.960Z] [API_RESPONSE] [REQ-012766] gemini：受信：
+
+How can I help you today?
+
+[2025-02-27T12:07:51.973Z] [WARN] [REQ-012766] Gemini 最終バッファのパースに失敗: SyntaxError: Unexpected token ']', "
+]" is not valid JSON
+[2025-02-27T12:07:51.973Z] [INFO] [REQ-012766] Gemini API ストリーム処理完了
+[2025-02-27T12:07:51.974Z] [INFO] APIClient: 生成完了 - リクエストID: REQ-012766
+[2025-02-27T12:07:51.974Z] [INFO] Stream completed successfully [${requestId}]
+[2025-02-27T12:07:52.478Z] [INFO] 🌐 API Route: チャットリクエスト受信 [REQ-860118]
+[2025-02-27T12:07:52.478Z] [INFO] 📨 受信パラメータ - プロンプト: こんにちは, LLM: gemini [REQ-860118]
+[2025-02-27T12:07:52.479Z] [INFO] 🔍 LLMタイプ: gemini [REQ-860118]
+[2025-02-27T12:07:52.479Z] [INFO] 🚀 ストリーム生成: [REQ-860118]
+[2025-02-27T12:07:52.479Z] [INFO] APIClient: 生成開始 - LLM: gemini, リクエストID: REQ-860118
+[2025-02-27T12:07:52.479Z] [API_REQUEST] [REQ-860118] gemini：送信：こんにちは
+[2025-02-27T12:07:52.479Z] [INFO] [REQ-860118] Gemini API リクエスト開始
+[2025-02-27T12:07:52.953Z] [INFO] 🌐 API Route: チャットリクエスト受信 [REQ-247498]
+[2025-02-27T12:07:52.954Z] [INFO] 📨 受信パラメータ - プロンプト: こんにちは, LLM: gemini [REQ-247498]
+[2025-02-27T12:07:52.954Z] [INFO] 🔍 LLMタイプ: gemini [REQ-247498]
+[2025-02-27T12:07:52.954Z] [INFO] 🚀 ストリーム生成: [REQ-247498]
+[2025-02-27T12:07:52.955Z] [ERROR] ストリーム生成中にエラーが発生しました: ${error} [${requestId}]
+[2025-02-27T12:07:53.085Z] [INFO] [REQ-860118] Gemini API ストリーム受信開始
+[2025-02-27T12:07:53.086Z] [API_RESPONSE] [REQ-860118] gemini：受信：こんにちは
+[2025-02-27T12:07:53.089Z] [API_RESPONSE] [REQ-860118] gemini：受信：���
+[2025-02-27T12:07:53.268Z] [INFO] 🌐 API Route: チャットリクエスト受信 [REQ-219996]
+[2025-02-27T12:07:53.268Z] [INFO] 📨 受信パラメータ - プロンプト: おはようございます, LLM: gemini [REQ-219996]
+[2025-02-27T12:07:53.269Z] [INFO] 🔍 LLMタイプ: gemini [REQ-219996]
+[2025-02-27T12:07:53.269Z] [INFO] 🚀 ストリーム生成: [REQ-219996]
+[2025-02-27T12:07:53.269Z] [ERROR] ストリーム生成中にエラーが発生しました: ${error} [${requestId}]
+[2025-02-27T12:07:53.373Z] [API_RESPONSE] [REQ-860118] gemini：受信：
+
+���������手伝いできることはありますか？
+
+[2025-02-27T12:07:53.374Z] [WARN] [REQ-860118] Gemini 最終バッファのパースに失敗: SyntaxError: Unexpected token ']', "
+]" is not valid JSON
+[2025-02-27T12:07:53.374Z] [INFO] [REQ-860118] Gemini API ストリーム処理完了
+[2025-02-27T12:07:53.374Z] [INFO] APIClient: 生成完了 - リクエストID: REQ-860118
+[2025-02-27T12:07:53.374Z] [INFO] Stream completed successfully [${requestId}]
+[2025-02-27T12:07:55.023Z] [INFO] 🌐 API Route: チャットリクエスト受信 [REQ-781797]
+[2025-02-27T12:07:55.024Z] [INFO] 📨 受信パラメータ - プロンプト: こんにちは, LLM: gemini [REQ-781797]
+[2025-02-27T12:07:55.024Z] [INFO] 🔍 LLMタイプ: gemini [REQ-781797]
+[2025-02-27T12:07:55.024Z] [INFO] 🚀 ストリーム生成: [REQ-781797]
+[2025-02-27T12:07:55.024Z] [INFO] APIClient: 生成開始 - LLM: gemini, リクエストID: REQ-781797
+[2025-02-27T12:07:55.024Z] [API_REQUEST] [REQ-781797] gemini：送信：こんにちは
+[2025-02-27T12:07:55.025Z] [INFO] [REQ-781797] Gemini API リクエスト開始
+[2025-02-27T12:07:55.650Z] [INFO] [REQ-781797] Gemini API ストリーム受信開始
+[2025-02-27T12:07:55.651Z] [API_RESPONSE] [REQ-781797] gemini：受信：こんにちは
+[2025-02-27T12:07:55.919Z] [API_RESPONSE] [REQ-781797] gemini：受信：���
+
+何かお手伝いできることはありますか？
+
+[2025-02-27T12:07:55.928Z] [WARN] [REQ-781797] Gemini 最終バッファのパースに失敗: SyntaxError: Unexpected token ']', "
+]" is not valid JSON
+[2025-02-27T12:07:55.928Z] [INFO] [REQ-781797] Gemini API ストリーム処理完了
+[2025-02-27T12:07:55.929Z] [INFO] APIClient: 生成完了 - リクエストID: REQ-781797
+[2025-02-27T12:07:55.929Z] [INFO] Stream completed successfully [${requestId}]
+[2025-02-27T12:07:56.000Z] [INFO] 🌐 API Route: チャットリクエスト受信 [REQ-402039]
+[2025-02-27T12:07:56.001Z] [INFO] 📨 受信パラメータ - プロンプト: こんにちは, LLM: gemini [REQ-402039]
+[2025-02-27T12:07:56.001Z] [INFO] 🔍 LLMタイプ: gemini [REQ-402039]
+[2025-02-27T12:07:56.001Z] [INFO] 🚀 ストリーム生成: [REQ-402039]
+[2025-02-27T12:07:56.002Z] [INFO] APIClient: 生成開始 - LLM: gemini, リクエストID: REQ-402039
+[2025-02-27T12:07:56.002Z] [API_REQUEST] [REQ-402039] gemini：送信：こんにちは
+[2025-02-27T12:07:56.002Z] [INFO] [REQ-402039] Gemini API リクエスト開始
+[2025-02-27T12:07:56.313Z] [INFO] 🌐 API Route: チャットリクエスト受信 [REQ-133513]
+[2025-02-27T12:07:56.313Z] [INFO] 📨 受信パラメータ - プロンプト: おはようございます, LLM: gemini [REQ-133513]
+[2025-02-27T12:07:56.313Z] [INFO] 🔍 LLMタイプ: gemini [REQ-133513]
+[2025-02-27T12:07:56.313Z] [INFO] 🚀 ストリーム生成: [REQ-133513]
+[2025-02-27T12:07:56.314Z] [ERROR] ストリーム生成中にエラーが発生しました: ${error} [${requestId}]
+[2025-02-27T12:07:56.439Z] [INFO] 🌐 API Route: チャットリクエスト受信 [REQ-150321]
+[2025-02-27T12:07:56.440Z] [INFO] 📨 受信パラメータ - プロンプト: こんにちは, LLM: gemini [REQ-150321]
+[2025-02-27T12:07:56.440Z] [INFO] 🔍 LLMタイプ: gemini [REQ-150321]
+[2025-02-27T12:07:56.440Z] [INFO] 🚀 ストリーム生成: [REQ-150321]
+[2025-02-27T12:07:56.440Z] [ERROR] ストリーム生成中にエラーが発生しました: ${error} [${requestId}]
+[2025-02-27T12:07:56.586Z] [INFO] [REQ-402039] Gemini API ストリーム受信開始
+[2025-02-27T12:07:56.587Z] [API_RESPONSE] [REQ-402039] gemini：受信：こんにちは
+[2025-02-27T12:07:56.593Z] [API_RESPONSE] [REQ-402039] gemini：受信：���
+[2025-02-27T12:07:56.818Z] [API_RESPONSE] [REQ-402039] gemini：受信：
+
+何かお手伝いできることはありますか？
+
+[2025-02-27T12:07:56.825Z] [WARN] [REQ-402039] Gemini 最終バッファのパースに失敗: SyntaxError: Unexpected token ']', "
+]" is not valid JSON
+[2025-02-27T12:07:56.826Z] [INFO] [REQ-402039] Gemini API ストリーム処理完了
+[2025-02-27T12:07:56.826Z] [INFO] APIClient: 生成完了 - リクエストID: REQ-402039
+[2025-02-27T12:07:56.826Z] [INFO] Stream completed successfully [${requestId}]

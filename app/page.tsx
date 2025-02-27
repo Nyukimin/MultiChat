@@ -1,8 +1,81 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
-import { ChatProvider } from '@/app/lib/context/ChatContext';
+import React, { useState, useEffect, useContext, useRef } from 'react';
+import { ChatProvider, ChatContext } from '@/app/lib/context/ChatContext';
 import { getEnv, isDebugMode, getChatSpeed } from '@/app/lib/config';
+
+// 拡張されたロガーの型定義
+interface ExtendedLogger {
+  info: (message: string, ...args: any[]) => void;
+  warn: (message: string, ...args: any[]) => void;
+  error: (message: string, ...args: any[]) => void;
+  debug?: (message: string, ...args: any[]) => void;
+  setRequestId: (requestId: string) => void;
+  apiRequest: (llm: string, prompt: string, requestId?: string) => void;
+  apiResponse: (llm: string, data: string, requestId?: string) => void;
+  apiParsedResponse: (llm: string, text: string, responseTime?: number, requestId?: string) => void;
+  clearLogQueue: () => void;
+  flushLogQueue: () => void;
+}
+
+// デフォルトのロガー実装
+const defaultLogger: ExtendedLogger = {
+  info: (message: string, ...args: any[]) => {
+    const fullMessage = args.length > 0 
+      ? `${message} ${args.map(arg => JSON.stringify(arg)).join(' ')}` 
+      : message;
+    console.log(`[Client] ${fullMessage}`);
+  },
+  warn: (message: string, ...args: any[]) => {
+    const fullMessage = args.length > 0 
+      ? `${message} ${args.map(arg => JSON.stringify(arg)).join(' ')}` 
+      : message;
+    console.warn(`[Client] ${fullMessage}`);
+  },
+  error: (message: string, ...args: any[]) => {
+    const fullMessage = args.length > 0 
+      ? `${message} ${args.map(arg => JSON.stringify(arg)).join(' ')}` 
+      : message;
+    console.error(`[Client] ${fullMessage}`);
+  },
+  debug: process.env.NEXT_PUBLIC_DEBUG_MODE === 'true' 
+    ? (message: string, ...args: any[]) => {
+        const fullMessage = args.length > 0 
+          ? `${message} ${args.map(arg => JSON.stringify(arg)).join(' ')}` 
+          : message;
+        console.debug(`[Client] ${fullMessage}`);
+      }
+    : undefined,
+  setRequestId: (requestId: string) => {
+    console.log(`Request ID: ${requestId}`);
+  },
+  apiRequest: (llm: string, prompt: string, requestId?: string) => {
+    console.log(`API Request - LLM: ${llm}, Prompt: ${prompt}, Request ID: ${requestId ?? 'N/A'}`);
+  },
+  apiResponse: (llm: string, data: string, requestId?: string) => {
+    console.log(`API Response - LLM: ${llm}, Data: ${data}, Request ID: ${requestId ?? 'N/A'}`);
+  },
+  apiParsedResponse: (llm: string, text: string, responseTime?: number, requestId?: string) => {
+    console.log(`API Parsed Response - LLM: ${llm}, Text: ${text}, Response Time: ${responseTime ?? 'N/A'}, Request ID: ${requestId ?? 'N/A'}`);
+  },
+  clearLogQueue: () => {
+    console.log('Log queue cleared');
+  },
+  flushLogQueue: () => {
+    console.log('Log queue flushed');
+  }
+};
+
+// nullセーフなロガー
+const logger: ExtendedLogger = new Proxy(defaultLogger, {
+  get(target, prop) {
+    if (prop in target) {
+      return target[prop as keyof ExtendedLogger];
+    }
+    // デフォルトの空の関数を返す
+    return () => {};
+  }
+});
 
 interface CharacterResponse {
   characterId: string;
@@ -15,6 +88,11 @@ interface CharacterResponse {
   error?: string;
 }
 
+// リクエスト番号を生成する関数
+const generateRequestId = () => {
+  return Math.random().toString(36).substr(2, 9);
+};
+
 export default function Home() {
   const [selectedCharacters, setSelectedCharacters] = useState<string[]>([]);
   const [ownerInput, setOwnerInput] = useState('');
@@ -22,6 +100,10 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [question, setQuestion] = useState('');
+  const { messages } = useContext(ChatContext);
+  
+  // アクティブなEventSourceを追跡するためのRef
+  const activeEventSources = useRef<Map<string, EventSource>>(new Map());
 
   // キャラクターリストの定義
   const characters = [
@@ -57,15 +139,28 @@ export default function Home() {
     });
   };
 
+  // 既存のリクエストを中断する関数
+  const abortActiveRequests = () => {
+    logger.info('[フロントエンド] 既存のリクエストを中断します');
+    activeEventSources.current.forEach((source, characterId) => {
+      logger.info(`[フロントエンド] ${characterId}のリクエストを中断`);
+      source.close();
+    });
+    activeEventSources.current.clear();
+  };
+
   const handleSubmit = async () => {
     const currentQuestion = ownerInput;
     if (!currentQuestion.trim()) return;
+
+    // 既存のリクエストを中断
+    abortActiveRequests();
 
     setIsLoading(true);
     setError(null);
     setQuestion(currentQuestion); // 質問をstateに保存
 
-    console.log('[Client] Submitting question:', {
+    logger.info('[Client] Submitting question:', {
       question: currentQuestion,
       selectedCharacters: selectedCharacters,
       timestamp: new Date().toISOString()
@@ -78,20 +173,40 @@ export default function Home() {
     selectedCharacters.forEach(characterId => {
       const character = characters.find(c => c.id === characterId);
       if (!character) {
-        console.error('[Client] Character not found:', characterId);
+        logger.error('[Client] Character not found:', characterId);
         return;
       }
 
-      console.log('[Client] Setting up stream for character:', {
+      logger.info('[Client] Setting up stream for character:', {
         id: character.id,
         name: character.name,
         llm: character.llm
       });
 
-      // SSEイベントハンドラーの設定
+      // EventSourceのセットアップ
       const setupEventSource = (prompt: string, llm: string) => {
-        const params = new URLSearchParams({ prompt, llm });
-        const eventSource = new EventSource(`/api/chat?${params.toString()}`);
+        // リクエスト番号を生成
+        const requestId = generateRequestId();
+        
+        // ロガーにリクエストIDを設定
+        logger.setRequestId(requestId);
+        
+        // APIリクエストをログに記録
+        logger.apiRequest(character.llm, prompt, requestId);
+        
+        // 既存のEventSourceがあれば閉じる
+        if (activeEventSources.current.has(character.id)) {
+          activeEventSources.current.get(character.id)?.close();
+        }
+
+        const encodedPrompt = encodeURIComponent(prompt);
+        const encodedLLM = encodeURIComponent(llm);
+        const encodedRequestId = encodeURIComponent(requestId);
+        const eventSource = new EventSource(`/api/chat?prompt=${encodedPrompt}&llm=${encodedLLM}&requestId=${encodedRequestId}`);
+        
+        // 新しいEventSourceを保存
+        activeEventSources.current.set(character.id, eventSource);
+
         let retryCount = 0;
         const maxRetries = 3;
         let reconnectTimeout: NodeJS.Timeout;
@@ -122,18 +237,26 @@ export default function Home() {
               eventSource.close();
               setError(`接続エラーが発生しました。再度お試しください。(${llm})`);
               setIsLoading(false);
+              // EventSourceをMapから削除
+              activeEventSources.current.delete(character.id);
             }
           }
         };
 
         eventSource.onmessage = (event) => {
           try {
-            console.log(`${character.llm}：受信：${event.data}`);
+            logger.apiResponse(character.llm, event.data, requestId);
 
             if (event.data === '[DONE]') {
-              console.log('[フロントエンド] 完了シグナル受信');
+              logger.info('[フロントエンド] 完了シグナル受信', requestId);
               eventSource.close();
-              setIsLoading(false);
+              // EventSourceをMapから削除
+              activeEventSources.current.delete(character.id);
+              
+              // すべてのリクエストが完了したかチェック
+              if (activeEventSources.current.size === 0) {
+                setIsLoading(false);
+              }
               return;
             }
 
@@ -143,62 +266,53 @@ export default function Home() {
               case 'gemini':
                 const parseGeminiChunk = (data: string) => {
                   try {
-                    const jsonStr = `[${data.replace(/\n/g, ',').replace(/,\s*$/, '')}]`;
-                    const responses = JSON.parse(jsonStr);
-                    return responses
-                      .map((res: any) => res?.candidates?.[0]?.content?.parts?.[0]?.text || '')
-                      .join('');
+                    // サーバー側でパース済みのテキストをそのまま使用
+                    return data;
                   } catch (error) {
-                    console.error('Geminiパースエラー:', error);
+                    logger.error('Geminiパースエラー:', error, requestId);
                     return '';
                   }
                 };
 
-                let geminiBuffer = '';
-                geminiBuffer += event.data;
-                console.log(`Gemini：生データ受信 -> ${event.data}`);
-
-                try {
-                  const text = parseGeminiChunk(geminiBuffer);
-                  if (text) {
-                    console.log(`Gemini：解析成功 -> ${text}`);
-                    setCharacterResponses(prev => {
-                      const newResponses = [...prev];
-                      const responseIndex = newResponses.findIndex(r => r.characterId === character.id);
-                      
-                      if (responseIndex !== -1) {
-                        console.log('[フロントエンド] 既存の応答を更新:', character.id);
-                        newResponses[responseIndex] = {
-                          ...newResponses[responseIndex],
-                          message: (newResponses[responseIndex].message || '') + text,
-                          responseTimestamp: new Date()
-                        };
-                      } else {
-                        console.log('[フロントエンド] 新しい応答を追加:', character.id);
-                        newResponses.push({
-                          characterId: character.id,
-                          message: text,
-                          llmName: character.llm,
-                          questionTimestamp: new Date(),
-                          responseTimestamp: new Date()
-                        });
-                      }
-                      return newResponses;
-                    });
-                    geminiBuffer = '';
-                  }
-                } catch (e) {
-                  console.log('Gemini：部分データ待機中...');
+                logger.debug(`Gemini：生データ受信 -> ${event.data}`, requestId);
+                text = parseGeminiChunk(event.data);
+                
+                if (text) {
+                  logger.apiParsedResponse('Gemini', text, undefined, requestId);
+                  logger.debug(`Gemini：解析成功 -> ${text}`, requestId);
+                  setCharacterResponses(prev => {
+                    const newResponses = [...prev];
+                    const responseIndex = newResponses.findIndex(r => r.characterId === character.id);
+                    
+                    if (responseIndex !== -1) {
+                      logger.debug('[フロントエンド] 既存の応答を更新:', character.id);
+                      newResponses[responseIndex] = {
+                        ...newResponses[responseIndex],
+                        message: (newResponses[responseIndex].message || '') + text,
+                        responseTimestamp: new Date()
+                      };
+                    } else {
+                      logger.debug('[フロントエンド] 新しい応答を追加:', character.id);
+                      newResponses.push({
+                        characterId: character.id,
+                        message: text,
+                        llmName: character.llm,
+                        questionTimestamp: new Date(),
+                        responseTimestamp: new Date()
+                      });
+                    }
+                    return newResponses;
+                  });
                 }
                 break;
               case 'ollama':
                 try {
-                  console.log('[フロントエンド] Ollama パース前:', event.data);
+                  logger.debug('[フロントエンド] Ollama パース前:', event.data, requestId);
                   const data = JSON.parse(event.data);
-                  console.log('[フロントエンド] Ollama パース結果:', data);
+                  logger.debug('[フロントエンド] Ollama パース結果:', data, requestId);
                   text = data.response;
                 } catch (e) {
-                  console.warn('[フロントエンド] Ollamaのパースエラー:', e);
+                  logger.warn('[フロントエンド] Ollamaのパースエラー:', e, requestId);
                   text = event.data;
                 }
                 break;
@@ -206,11 +320,11 @@ export default function Home() {
                 text = event.data;
                 break;
               default:
-                console.warn('[フロントエンド] 未知のLLMタイプ:', character.llm);
+                logger.warn('[フロントエンド] 未知のLLMタイプ:', character.llm, requestId);
                 text = event.data;
             }
 
-            console.log(`${character.llm}：パース後：${text}`);
+            logger.apiParsedResponse(character.llm, text, undefined, requestId);
 
             // 共通の表示処理
             setCharacterResponses(prev => {
@@ -218,14 +332,14 @@ export default function Home() {
               const responseIndex = newResponses.findIndex(r => r.characterId === character.id);
               
               if (responseIndex !== -1) {
-                console.log('[フロントエンド] 既存の応答を更新:', character.id);
+                logger.debug('[フロントエンド] 既存の応答を更新:', character.id, requestId);
                 newResponses[responseIndex] = {
                   ...newResponses[responseIndex],
                   message: (newResponses[responseIndex].message || '') + text,
                   responseTimestamp: new Date()
                 };
               } else {
-                console.log('[フロントエンド] 新しい応答を追加:', character.id);
+                logger.debug('[フロントエンド] 新しい応答を追加:', character.id, requestId);
                 newResponses.push({
                   characterId: character.id,
                   message: text,
@@ -237,11 +351,24 @@ export default function Home() {
               return newResponses;
             });
 
-          } catch (error) {
-            console.error('[フロントエンド] エラー:', error);
-            setError(`メッセージの処理中にエラーが発生しました: ${error.message}`);
+          } catch (streamError) {
+            const handleError = (error: Error | unknown) => {
+              if (error instanceof Error) {
+                logger.error('エラーが発生しました', error, requestId);
+              } else {
+                logger.error('不明なエラーが発生しました', requestId);
+              }
+            };
+            handleError(streamError);
+            setError(`メッセージの処理中にエラーが発生しました: ${streamError instanceof Error ? streamError.message : '不明なエラー'}`);
             eventSource.close();
-            setIsLoading(false);
+            // EventSourceをMapから削除
+            activeEventSources.current.delete(character.id);
+            
+            // すべてのリクエストが完了したかチェック
+            if (activeEventSources.current.size === 0) {
+              setIsLoading(false);
+            }
           }
         };
 
@@ -254,10 +381,35 @@ export default function Home() {
     setOwnerInput('');
   };
 
+  // コンポーネントのアンマウント時にリソースをクリーンアップ
+  useEffect(() => {
+    // ページロード時にロガーのキューをクリア
+    logger.clearLogQueue();
+    
+    // 初期リクエストIDを生成
+    const initialRequestId = generateRequestId();
+    logger.setRequestId(initialRequestId);
+    logger.info(`ページがロードされました - 初期リクエストID: ${initialRequestId}`);
+
+    return () => {
+      // アンマウント時に全てのEventSourceを閉じる
+      activeEventSources.current.forEach((es) => {
+        es.close();
+      });
+      activeEventSources.current.clear();
+      
+      // ロガーのキューを強制的にフラッシュ
+      logger.flushLogQueue();
+      
+      // アクティブなリクエストを中止
+      abortActiveRequests();
+    };
+  }, []);
+
   // デバッグモードの確認
   if (isDebugMode()) {
-    console.log('Chat Speed:', getChatSpeed());
-    console.log('Available Providers:', {
+    logger.debug('Chat Speed:', getChatSpeed());
+    logger.debug('Available Providers:', {
       claude: getEnv('anthropic') ? 'Available' : 'Not available',
       gemini: getEnv('gemini') ? 'Available' : 'Not available'
     });

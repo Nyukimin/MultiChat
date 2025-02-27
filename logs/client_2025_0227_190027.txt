@@ -1,0 +1,2 @@
+[2025-02-27T10:00:27.157Z] [INFO] Client Logger initialized
+[2025-02-27T10:00:27.159Z] [INFO] ページがロードされました

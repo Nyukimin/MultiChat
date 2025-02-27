@@ -1,0 +1,85 @@
+[2025-02-27T09:47:19.999Z] [INFO] Client Logger initialized
+[2025-02-27T09:47:20.001Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:20.094Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:20.299Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:20.615Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:20.946Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:21.001Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:21.050Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:21.095Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:21.133Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:21.170Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:21.208Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:21.249Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:21.284Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:21.326Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:21.468Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:21.517Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:21.565Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:21.617Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:21.662Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:21.695Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:21.737Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:21.772Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:21.808Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:21.842Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:21.999Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:22.039Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:22.081Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:22.120Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:22.153Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:22.186Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:22.220Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:22.255Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:22.287Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:22.320Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:22.486Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:22.521Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:22.565Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:22.619Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:22.662Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:22.697Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:22.730Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:22.764Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:22.797Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:22.831Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:22.975Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:23.011Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:23.046Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:23.090Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:23.128Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:23.170Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:23.205Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:23.239Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:23.271Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:23.305Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:23.450Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:23.485Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:23.526Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:23.577Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:23.644Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:23.684Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:25.596Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:25.657Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:25.713Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:25.756Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:25.797Z] [INFO] [フロントエンド] 既存のリクエストを中断します
+[2025-02-27T09:47:25.836Z] [INFO] [[object Object]] [Client] Submitting question:
+[2025-02-27T09:47:25.871Z] [INFO] [[object Object]] [Client] Setting up stream for character:
+[2025-02-27T09:47:25.906Z] [API_REQUEST] [bxvx2u5lo] gemini：送信：おはようござます
+[2025-02-27T09:47:25.941Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:25.975Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:47:26.112Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:47:26.147Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:49:33.928Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:49:33.970Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:49:34.007Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:49:34.041Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:50:46.928Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:50:46.962Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:50:46.994Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:50:47.027Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:50:47.062Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:50:47.096Z] [DEBUG] [[object Object]] Available Providers:
+[2025-02-27T09:50:47.133Z] [DEBUG] [5] Chat Speed:
+[2025-02-27T09:50:47.167Z] [DEBUG] [[object Object]] Available Providers:
